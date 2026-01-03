@@ -3,7 +3,7 @@
 #define AppExeName "gestion_moderne_magasin.exe"
 
 [Setup]
-AppId=9F7A6C2E-8B5D-4C7F-A2E1-123456789ABC
+AppId={9F7A6C2E-8B5D-4C7F-A2E1-123456789ABC}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher=Fode Momo Soumah
@@ -19,7 +19,7 @@ ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 DisableProgramGroupPage=yes
 PrivilegesRequired=admin
-SetupIconFile==app_icon.ico
+SetupIconFile=icon.ico
 
 [Files]
 ; Fichiers Flutter Release
@@ -27,9 +27,8 @@ Source: "build\windows\x64\runner\Release\*"; \
 DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 ; DLL Visual C++ (sécurité)
-; ⚠️ Mieux vaut laisser l'utilisateur installer le runtime VC++ Redistributable au lieu de copier depuis System32
-; Source: "C:\Windows\System32\vcruntime140.dll"; DestDir: "{app}"; Flags: ignoreversion
-; Source: "C:\Windows\System32\msvcp140.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Windows\System32\vcruntime140.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Windows\System32\msvcp140.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"
