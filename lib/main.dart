@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'core/database/database_helper.dart';
 import 'theme.dart';
 import 'services/theme_service.dart';
@@ -10,11 +12,14 @@ import 'models/user.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    await DatabaseHelper.instance.initDatabase();
-  } catch (_) {
-    // On continue même si la DB échoue (sécurité)
+  // ✅ OBLIGATOIRE pour Windows/Linux Desktop
+  if (Platform.isWindows || Platform.isLinux) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
   }
+
+  // ✅ Force la création de la DB au démarrage
+  await DatabaseHelper.instance.database;
 
   runApp(const MyApp());
 }
