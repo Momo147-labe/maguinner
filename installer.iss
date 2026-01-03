@@ -19,7 +19,7 @@ ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 DisableProgramGroupPage=yes
 PrivilegesRequired=admin
-SetupIconFile=icon.ico
+SetupIconFile=windows\runner\resources\app_icon.ico
 
 [Files]
 ; Fichiers Flutter Release
