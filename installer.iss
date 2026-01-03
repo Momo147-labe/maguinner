@@ -3,7 +3,7 @@
 #define AppExeName "gestion_moderne_magasin.exe"
 
 [Setup]
-AppId={9F7A6C2E-8B5D-4C7F-A2E1-123456789ABC}
+AppId={{9F7A6C2E-8B5D-4C7F-A2E1-123456789ABC}}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher=Fode Momo Soumah
