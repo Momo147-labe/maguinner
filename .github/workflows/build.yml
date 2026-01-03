@@ -79,9 +79,9 @@ jobs:
           mkdir Output -Force
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer.iss"
 
-      # 1️⃣2️⃣ Upload Setup.exe comme artefact
+      # 1️⃣2️⃣ Upload Setup.exe comme artefact (corrigé)
       - name: Upload Setup.exe
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Windows-Setup
           path: Output/*.exe
