@@ -1,41 +1,128 @@
 #define AppName "Gestion moderne de magasin"
 #define AppVersion "1.0.0"
+#define AppPublisher "Fode Momo Soumah"
+#define AppURL "https://github.com/Momo147-labe"
 #define AppExeName "gestion_moderne_magasin.exe"
+#define AppId "9F7A6C2E-8B5D-4C7F-A2E1-123456789ABC"
 
 [Setup]
-AppId={{9F7A6C2E-8B5D-4C7F-A2E1-123456789ABC}}
+; ✅ INFORMATIONS OBLIGATOIRES (éviter "Éditeur inconnu")
+AppId={{{#AppId}}}
 AppName={#AppName}
 AppVersion={#AppVersion}
-AppPublisher=Fode Momo Soumah
-AppPublisherURL=https://github.com/Momo147-labe
-DefaultDirName={pf}\{#AppName}
+AppPublisher={#AppPublisher}
+AppPublisherURL={#AppURL}
+AppSupportURL={#AppURL}/issues
+AppUpdatesURL={#AppURL}/releases
+AppCopyright=Copyright © 2024 {#AppPublisher}
+VersionInfoVersion={#AppVersion}
+VersionInfoCompany={#AppPublisher}
+VersionInfoDescription={#AppName}
+VersionInfoProductName={#AppName}
+VersionInfoProductVersion={#AppVersion}
+
+; ✅ CONFIGURATION INSTALLATION
+DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
+AllowNoIcons=yes
+LicenseFile=
+PrivilegesRequired=lowest
+PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=Output
-OutputBaseFilename=Setup-Gestion-Moderne-Magasin
-Compression=lzma
+OutputBaseFilename=Setup-{#AppName}-{#AppVersion}
+SetupIconFile=windows\runner\resources\app_icon.ico
+Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+
+; ✅ SÉCURITÉ WINDOWS
 DisableProgramGroupPage=yes
-PrivilegesRequired=admin
-SetupIconFile=windows\runner\resources\app_icon.ico
+DisableReadyPage=no
+DisableFinishedPage=no
+DisableWelcomePage=no
+ShowLanguageDialog=no
+UsePreviousAppDir=yes
+UsePreviousGroup=yes
+UpdateUninstallLogAppName=yes
+UninstallDisplayIcon={app}\{#AppExeName}
+UninstallDisplayName={#AppName}
+
+[Languages]
+Name: "french"; MessagesFile: "compiler:Languages\French.isl"
+Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "Créer un raccourci sur le bureau"; GroupDescription: "Raccourcis:"; Flags: unchecked
+Name: "quicklaunchicon"; Description: "Créer un raccourci dans la barre de lancement rapide"; GroupDescription: "Raccourcis:"; Flags: unchecked; OnlyBelowVersion: 6.1
 
 [Files]
-; Fichiers Flutter Release
-Source: "build\windows\x64\runner\Release\*"; \
-DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+; ✅ APPLICATION FLUTTER
+Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
-; DLL Visual C++ (sécurité)
-Source: "C:\Windows\System32\vcruntime140.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Windows\System32\msvcp140.dll"; DestDir: "{app}"; Flags: ignoreversion
+; ✅ RUNTIME VISUAL C++ (éviter erreurs DLL)
+Source: "C:\Windows\System32\vcruntime140.dll"; DestDir: "{app}"; Flags: external skipifsourcedoesntexist
+Source: "C:\Windows\System32\msvcp140.dll"; DestDir: "{app}"; Flags: external skipifsourcedoesntexist
+Source: "C:\Windows\System32\vcruntime140_1.dll"; DestDir: "{app}"; Flags: external skipifsourcedoesntexist
+
+[Registry]
+; ✅ ENREGISTREMENT APPLICATION (éviter comportements suspects)
+Root: HKCU; Subkey: "Software\{#AppPublisher}\{#AppName}"; ValueType: string; ValueName: "InstallPath"; ValueData: "{app}"
+Root: HKCU; Subkey: "Software\{#AppPublisher}\{#AppName}"; ValueType: string; ValueName: "Version"; ValueData: "{#AppVersion}"
+Root: HKCU; Subkey: "Software\{#AppPublisher}\{#AppName}"; ValueType: dword; ValueName: "Installed"; ValueData: 1
 
 [Icons]
-Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"
-Name: "{commondesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"
+Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"
+Name: "{group}\Désinstaller {#AppName}"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Tasks: quicklaunchicon
 
 [Run]
-; 🚀 Lancer l'application après installation
-Filename: "{app}\{#AppExeName}"; \
-Description: "Lancer {#AppName}"; \
-Flags: nowait postinstall skipifsilent
+; ✅ RÈGLES FIREWALL (autoriser réseau)
+Filename: "netsh"; Parameters: "advfirewall firewall add rule name=""{#AppName} - Sortant"" dir=out action=allow program=""{app}\{#AppExeName}"" enable=yes"; Flags: runhidden; StatusMsg: "Configuration du pare-feu..."
+Filename: "netsh"; Parameters: "advfirewall firewall add rule name=""{#AppName} - Entrant"" dir=in action=allow program=""{app}\{#AppExeName}"" enable=yes"; Flags: runhidden
+
+; ✅ LANCEMENT POST-INSTALLATION
+Filename: "{app}\{#AppExeName}"; Description: "Lancer {#AppName}"; Flags: nowait postinstall skipifsilent; WorkingDir: "{app}"
+
+[UninstallRun]
+; ✅ NETTOYAGE RÈGLES FIREWALL
+Filename: "netsh"; Parameters: "advfirewall firewall delete rule name=""{#AppName} - Sortant"""; Flags: runhidden
+Filename: "netsh"; Parameters: "advfirewall firewall delete rule name=""{#AppName} - Entrant"""; Flags: runhidden
+
+[UninstallDelete]
+; ✅ NETTOYAGE DONNÉES UTILISATEUR (optionnel)
+Type: filesandordirs; Name: "{userappdata}\{#AppPublisher}\{#AppName}"
+Type: filesandordirs; Name: "{localappdata}\{#AppPublisher}\{#AppName}"
+
+[Code]
+// ✅ VÉRIFICATIONS PRÉ-INSTALLATION
+function InitializeSetup(): Boolean;
+begin
+  Result := True;
+  
+  // Vérifier Windows 10/11
+  if GetWindowsVersion < $0A000000 then begin
+    MsgBox('Cette application nécessite Windows 10 ou supérieur.', mbError, MB_OK);
+    Result := False;
+  end;
+end;
+
+// ✅ CONFIGURATION POST-INSTALLATION
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then begin
+    // Créer dossiers AppData si nécessaire
+    CreateDir(ExpandConstant('{localappdata}\{#AppPublisher}'));
+    CreateDir(ExpandConstant('{localappdata}\{#AppPublisher}\{#AppName}'));
+  end;
+end;
+
+// ✅ NETTOYAGE PRÉ-DÉSINSTALLATION
+function InitializeUninstall(): Boolean;
+begin
+  Result := True;
+  if MsgBox('Voulez-vous également supprimer les données de l''application ?', mbConfirmation, MB_YESNO) = IDNO then
+    Result := True;
+end;

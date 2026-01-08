@@ -29,7 +29,7 @@ class DatabaseHelper {
     final path = await getDatabasePath();
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -155,6 +155,8 @@ class DatabaseHelper {
       CREATE TABLE app_settings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         first_launch_done INTEGER DEFAULT 0,
+        license TEXT,
+        activated_at TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
@@ -195,6 +197,8 @@ class DatabaseHelper {
         CREATE TABLE IF NOT EXISTS app_settings (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           first_launch_done INTEGER DEFAULT 0,
+          license TEXT,
+          activated_at TEXT,
           created_at TEXT DEFAULT CURRENT_TIMESTAMP,
           updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
@@ -223,6 +227,14 @@ class DatabaseHelper {
         await db.execute('ALTER TABLE users ADD COLUMN secret_code TEXT');
       } catch (e) {
         // Ignorer si la colonne existe déjà
+      }
+    }
+    if (oldVersion < 6) {
+      try {
+        await db.execute('ALTER TABLE app_settings ADD COLUMN license TEXT');
+        await db.execute('ALTER TABLE app_settings ADD COLUMN activated_at TEXT');
+      } catch (e) {
+        // Ignorer si les colonnes existent déjà
       }
     }
   }
@@ -468,6 +480,8 @@ class DatabaseHelper {
     if (existing != null) {
       final updateMap = <String, dynamic>{
         'first_launch_done': settings.firstLaunchDone ? 1 : 0,
+        'license': settings.license,
+        'activated_at': settings.activatedAt,
         'updated_at': settings.updatedAt ?? DateTime.now().toIso8601String(),
       };
       
@@ -496,6 +510,60 @@ class DatabaseHelper {
         'created_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       });
+    }
+  }
+
+  // ================= LICENSE METHODS =================
+  /// Sauvegarde une licence en SQLite (OBLIGATOIRE)
+  Future<void> saveLicense(String license) async {
+    final db = await database;
+    final existing = await getAppSettings();
+    
+    if (existing != null) {
+      await db.update(
+        'app_settings',
+        {
+          'license': license,
+          'activated_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [existing.id],
+      );
+    } else {
+      await db.insert('app_settings', {
+        'first_launch_done': 0,
+        'license': license,
+        'activated_at': DateTime.now().toIso8601String(),
+        'created_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+    }
+  }
+
+  /// Récupère la licence stockée
+  Future<String?> getLicense() async {
+    final db = await database;
+    final res = await db.query('app_settings', limit: 1);
+    return res.isNotEmpty ? res.first['license'] as String? : null;
+  }
+
+  /// Supprime la licence (désactivation)
+  Future<void> clearLicense() async {
+    final db = await database;
+    final existing = await getAppSettings();
+    
+    if (existing != null) {
+      await db.update(
+        'app_settings',
+        {
+          'license': null,
+          'activated_at': null,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [existing.id],
+      );
     }
   }
 

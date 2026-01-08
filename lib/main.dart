@@ -4,7 +4,9 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'core/database/database_helper.dart';
 import 'theme.dart';
 import 'services/theme_service.dart';
+import 'services/license_service.dart';
 import 'screens/login_screen.dart';
+import 'screens/license_screen.dart';
 import 'screens/first_launch_screen.dart';
 import 'layouts/main_layout.dart';
 import 'models/user.dart';
@@ -54,13 +56,23 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  /// Vérifie si le premier lancement a été fait
-  Future<bool> _isFirstLaunch() async {
+  /// Résout la route initiale selon la RÈGLE PRINCIPALE
+  Future<String> _resolveInitialRoute() async {
     try {
+      // 🔒 RÈGLE PRINCIPALE : Vérifier UNIQUEMENT SQLite
       final settings = await DatabaseHelper.instance.getAppSettings();
-      return settings == null || !settings.firstLaunchDone;
-    } catch (_) {
-      return true; // Premier lancement par défaut
+      
+      if (settings != null && settings.license != null && settings.license!.isNotEmpty) {
+        // ✅ Licence valide existe → Login direct
+        return '/login';
+      } else {
+        // ❌ Pas de licence → Flux 6 pages
+        return '/first-launch';
+      }
+    } catch (e) {
+      debugPrint('ROUTE RESOLUTION ERROR => $e');
+      // 🔒 En cas d'erreur → Flux 6 pages par défaut
+      return '/first-launch';
     }
   }
 
@@ -69,6 +81,16 @@ class _MyAppState extends State<MyApp> {
     try {
       final users = await DatabaseHelper.instance.getUsers();
       return users.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Vérifie si une licence valide existe
+  Future<bool> _hasValidLicense() async {
+    try {
+      final settings = await DatabaseHelper.instance.getAppSettings();
+      return settings != null && settings.license != null && settings.license!.isNotEmpty;
     } catch (_) {
       return false;
     }
@@ -97,34 +119,39 @@ class _MyAppState extends State<MyApp> {
       ),
       themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
 
-      /// ✅ NOUVELLE LOGIQUE 100% OFFLINE
-      home: FutureBuilder<List<bool>>(
-        future: Future.wait([_isFirstLaunch(), _hasUsers()]),
+      /// 🔒 LOGIQUE SIMPLE : SQLITE SEULE SOURCE DE VÉRITÉ
+      home: FutureBuilder<String>(
+        future: _resolveInitialRoute(),
         builder: (context, snapshot) {
-          // Loader simple pendant la vérification SQLite
+          // Loader pendant la vérification SQLite
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Scaffold(
+            return Scaffold(
               body: Center(
-                child: CircularProgressIndicator(),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Chargement...',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
               ),
             );
           }
 
-          final isFirstLaunch = snapshot.data?[0] ?? true;
-          final hasUsers = snapshot.data?[1] ?? false;
-
-          // Premier lancement → Onboarding
-          if (isFirstLaunch) {
-            return const FirstLaunchScreen();
+          final route = snapshot.data ?? '/first-launch';
+          
+          switch (route) {
+            case '/login':
+              return const LoginScreen();
+            case '/first-launch':
+            default:
+              // 🔒 PAR DÉFAUT : Flux 6 pages
+              return const FirstLaunchScreen();
           }
-
-          // Utilisateur existe → Login
-          if (hasUsers) {
-            return const LoginScreen();
-          }
-
-          // Sinon → Onboarding (sécurité)
-          return const FirstLaunchScreen();
         },
       ),
 
@@ -136,6 +163,11 @@ class _MyAppState extends State<MyApp> {
     final routeName = settings.name;
 
     switch (routeName) {
+      case '/first-launch':
+        return MaterialPageRoute(
+          builder: (_) => const FirstLaunchScreen(),
+        );
+        
       case '/login':
         return MaterialPageRoute(
           builder: (_) => const LoginScreen(),
@@ -154,14 +186,13 @@ class _MyAppState extends State<MyApp> {
         return _buildSecureRoute(settings, routeName!);
 
       case '/restart':
-        // Route spéciale pour redémarrer l'app après changement de couleur
         return MaterialPageRoute(
           builder: (_) => const MyApp(),
         );
 
       default:
         return MaterialPageRoute(
-          builder: (_) => const LoginScreen(),
+          builder: (_) => const FirstLaunchScreen(),
         );
     }
   }
@@ -172,10 +203,38 @@ class _MyAppState extends State<MyApp> {
   ) {
     final args = settings.arguments;
 
-    // Sécurité : pas d'utilisateur → login
+    // 🔒 Sécurité : Vérifier licence avant accès aux routes sécurisées
     if (args == null || args is! User) {
       return MaterialPageRoute(
-        builder: (_) => const LoginScreen(),
+        builder: (_) => FutureBuilder<bool>(
+          future: _hasValidLicense(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Vérification...',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            
+            final hasLicense = snapshot.data ?? false;
+            if (hasLicense) {
+              return const LoginScreen();
+            } else {
+              return const FirstLaunchScreen();
+            }
+          },
+        ),
       );
     }
 

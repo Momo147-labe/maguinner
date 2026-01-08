@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/store_info.dart';
 import '../models/user.dart';
+import '../services/license_service.dart';
 
 /// Sidebar animée avec logo et horloge temps réel
 class AnimatedSidebar extends StatefulWidget {
@@ -217,6 +218,14 @@ class _AnimatedSidebarState extends State<AnimatedSidebar> with TickerProviderSt
                     route: '/users',
                   ),
                 const Divider(height: 32),
+                // Désactivation licence - Réservé aux admins
+                if (widget.currentUser.role?.toLowerCase() == 'admin')
+                  _buildMenuItem(
+                    icon: Icons.security,
+                    title: 'Désactiver licence',
+                    route: '/deactivate-license',
+                    isDeactivate: true,
+                  ),
                 _buildMenuItem(
                   icon: Icons.logout,
                   title: 'Déconnexion',
@@ -236,6 +245,7 @@ class _AnimatedSidebarState extends State<AnimatedSidebar> with TickerProviderSt
     required String title,
     required String route,
     bool isLogout = false,
+    bool isDeactivate = false,
   }) {
     final isSelected = widget.currentRoute == route;
     final isHovered = _hoveredItem == route;
@@ -281,7 +291,7 @@ class _AnimatedSidebarState extends State<AnimatedSidebar> with TickerProviderSt
                 icon,
                 color: isSelected
                     ? Theme.of(context).colorScheme.primary
-                    : isLogout
+                    : (isLogout || isDeactivate)
                         ? Colors.red
                         : Theme.of(context).colorScheme.onSurface,
                 size: 20,
@@ -292,14 +302,20 @@ class _AnimatedSidebarState extends State<AnimatedSidebar> with TickerProviderSt
               style: TextStyle(
                 color: isSelected
                     ? Theme.of(context).colorScheme.primary
-                    : isLogout
+                    : (isLogout || isDeactivate)
                         ? Colors.red
                         : Theme.of(context).colorScheme.onSurface,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 fontSize: 14,
               ),
             ),
-            onTap: () => widget.onNavigate(route),
+            onTap: () {
+              if (isDeactivate) {
+                _showDeactivateDialog();
+              } else {
+                widget.onNavigate(route);
+              }
+            },
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -307,5 +323,65 @@ class _AnimatedSidebarState extends State<AnimatedSidebar> with TickerProviderSt
         ),
       ),
     );
+  }
+
+  void _showDeactivateDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Désactiver la licence'),
+          ],
+        ),
+        content: const Text(
+          'Êtes-vous sûr de vouloir désactiver la licence ?\n\n'
+          'Cette action vous redirigera vers l\'écran d\'activation.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _deactivateLicense();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Désactiver'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deactivateLicense() async {
+    try {
+      // 🔒 Désactivation stricte
+      await LicenseService.deactivate();
+      
+      if (mounted) {
+        // ❌ Redirection OBLIGATOIRE vers écran licence
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/license',
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la désactivation: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

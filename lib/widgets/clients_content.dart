@@ -19,9 +19,7 @@ class ClientsContent extends StatefulWidget {
 class _ClientsContentState extends State<ClientsContent> {
   List<Customer> _customers = [];
   List<List<String>> _tableRows = [];
-  List<Customer> _filteredCustomers = [];
   bool _isLoading = true;
-  final TextEditingController _searchController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -35,7 +33,6 @@ class _ClientsContentState extends State<ClientsContent> {
 
   @override
   void dispose() {
-    _searchController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
@@ -50,7 +47,6 @@ class _ClientsContentState extends State<ClientsContent> {
       final rows = await _buildCustomerRows(customers);
       setState(() {
         _customers = customers;
-        _filteredCustomers = customers;
         _tableRows = rows;
         _isLoading = false;
       });
@@ -91,42 +87,6 @@ class _ClientsContentState extends State<ClientsContent> {
         '${debt.toStringAsFixed(0)} GNF',
         _formatDate(customer.createdAt),
       ]);
-    }
-    
-    return rows;
-  }
-
-  void _filterCustomers() {
-    final query = _searchController.text.toLowerCase();
-    if (query.isEmpty) {
-      setState(() {
-        _filteredCustomers = _customers;
-        _tableRows = _buildFilteredRows(_customers);
-      });
-    } else {
-      final filtered = _customers.where((customer) =>
-        customer.name.toLowerCase().contains(query) ||
-        (customer.phone?.toLowerCase().contains(query) ?? false) ||
-        (customer.email?.toLowerCase().contains(query) ?? false) ||
-        (customer.address?.toLowerCase().contains(query) ?? false)
-      ).toList();
-      
-      setState(() {
-        _filteredCustomers = filtered;
-        _tableRows = _buildFilteredRows(filtered);
-      });
-    }
-  }
-
-  List<List<String>> _buildFilteredRows(List<Customer> customers) {
-    final List<List<String>> rows = [];
-    
-    for (int i = 0; i < customers.length; i++) {
-      final customer = customers[i];
-      final originalIndex = _customers.indexWhere((c) => c.id == customer.id);
-      if (originalIndex >= 0 && originalIndex < _tableRows.length) {
-        rows.add(_tableRows[originalIndex]);
-      }
     }
     
     return rows;
@@ -281,7 +241,7 @@ class _ClientsContentState extends State<ClientsContent> {
   }
 
   void _viewCustomerDetails(int index) {
-    final customer = _filteredCustomers[index];
+    final customer = _customers[index];
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -291,11 +251,11 @@ class _ClientsContentState extends State<ClientsContent> {
   }
 
   void _editCustomer(int index) {
-    _showCustomerDialog(customer: _filteredCustomers[index]);
+    _showCustomerDialog(customer: _customers[index]);
   }
 
   Future<void> _deleteCustomer(int index) async {
-    final customer = _filteredCustomers[index];
+    final customer = _customers[index];
     
     showDialog(
       context: context,
@@ -414,20 +374,6 @@ class _ClientsContentState extends State<ClientsContent> {
                   ),
                 ),
               ),
-              const Spacer(),
-              SizedBox(
-                width: 300,
-                child: TextField(
-                  controller: _searchController,
-                  decoration: const InputDecoration(
-                    hintText: 'Rechercher un client...',
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                  onChanged: (value) => _filterCustomers(),
-                ),
-              ),
             ],
           ),
         ),
@@ -445,15 +391,15 @@ class _ClientsContentState extends State<ClientsContent> {
             ],
             rows: _tableRows,
             onDetails: List.generate(
-              _filteredCustomers.length,
+              _customers.length,
               (index) => () => _viewCustomerDetails(index),
             ),
             onEdit: List.generate(
-              _filteredCustomers.length,
+              _customers.length,
               (index) => () => _editCustomer(index),
             ),
             onDelete: List.generate(
-              _filteredCustomers.length,
+              _customers.length,
               (index) => () => _deleteCustomer(index),
             ),
           ),

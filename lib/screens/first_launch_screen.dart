@@ -1,73 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
-import '../models/app_settings.dart';
+import '../core/database/database_helper.dart';
 import '../models/store_info.dart';
 import '../models/user.dart';
-import '../core/database/database_helper.dart';
+import '../services/license_service.dart';
 
+/// 🎆 Flux de premier lancement - 6 pages
 class FirstLaunchScreen extends StatefulWidget {
-  const FirstLaunchScreen({Key? key}) : super(key: key);
+  const FirstLaunchScreen({super.key});
 
   @override
   State<FirstLaunchScreen> createState() => _FirstLaunchScreenState();
 }
 
-class _FirstLaunchScreenState extends State<FirstLaunchScreen> with TickerProviderStateMixin {
+class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
+  bool _isLoading = false;
   
-  // Store form
+  // Contrôleurs pour la page licence
+  final _licenseController = TextEditingController();
+  String? _licenseError;
+  
+  // Contrôleurs pour la page magasin + utilisateur
   final _storeNameController = TextEditingController();
-  final _ownerNameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _locationController = TextEditingController();
-  final _adminFullNameController = TextEditingController();
-  final _adminUsernameController = TextEditingController();
-  final _adminPasswordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+  final _storeOwnerController = TextEditingController();
+  final _storePhoneController = TextEditingController();
+  final _storeAddressController = TextEditingController();
+  final _userNameController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _secretCodeController = TextEditingController();
-  
-  bool _isCreatingStore = false;
-  String? _storeError;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-    _animationController.forward();
-  }
+  String? _setupError;
 
   @override
   void dispose() {
-    _animationController.dispose();
     _pageController.dispose();
+    _licenseController.dispose();
     _storeNameController.dispose();
-    _ownerNameController.dispose();
-    _phoneController.dispose();
-    _emailController.dispose();
-    _locationController.dispose();
-    _adminFullNameController.dispose();
-    _adminUsernameController.dispose();
-    _adminPasswordController.dispose();
-    _confirmPasswordController.dispose();
+    _storeOwnerController.dispose();
+    _storePhoneController.dispose();
+    _storeAddressController.dispose();
+    _userNameController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
     _secretCodeController.dispose();
     super.dispose();
   }
 
   void _nextPage() {
-    if (_currentPage < 5) { // 6 pages (0-5)
+    if (_currentPage < 5) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 400),
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     }
@@ -76,836 +61,839 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> with TickerProvid
   void _previousPage() {
     if (_currentPage > 0) {
       _pageController.previousPage(
-        duration: const Duration(milliseconds: 400),
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     }
   }
 
-
-
-  Future<void> _createStoreAndAdmin() async {
-    // Validation des champs
-    if (_storeNameController.text.trim().isEmpty) {
-      setState(() => _storeError = 'Nom du magasin obligatoire');
-      return;
-    }
-    if (_ownerNameController.text.trim().isEmpty) {
-      setState(() => _storeError = 'Nom du propriétaire obligatoire');
-      return;
-    }
-    if (_phoneController.text.trim().isEmpty) {
-      setState(() => _storeError = 'Téléphone obligatoire');
-      return;
-    }
-    if (_emailController.text.trim().isEmpty) {
-      setState(() => _storeError = 'Email obligatoire');
-      return;
-    }
-    // Validation email
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(_emailController.text.trim())) {
-      setState(() => _storeError = 'Email invalide');
-      return;
-    }
-    if (_locationController.text.trim().isEmpty) {
-      setState(() => _storeError = 'Localisation obligatoire');
-      return;
-    }
-    if (_adminFullNameController.text.trim().isEmpty) {
-      setState(() => _storeError = 'Nom complet administrateur obligatoire');
-      return;
-    }
-    if (_adminUsernameController.text.trim().isEmpty) {
-      setState(() => _storeError = 'Nom d\'utilisateur obligatoire');
-      return;
-    }
-    if (_adminPasswordController.text.length < 8) {
-      setState(() => _storeError = 'Mot de passe minimum 8 caractères');
-      return;
-    }
-    if (_adminPasswordController.text != _confirmPasswordController.text) {
-      setState(() => _storeError = 'Les mots de passe ne correspondent pas');
-      return;
-    }
-    if (_secretCodeController.text.trim().isEmpty) {
-      setState(() => _storeError = 'Code secret obligatoire');
+  Future<void> _activateLicense() async {
+    final licenseKey = _licenseController.text.trim();
+    
+    if (licenseKey.isEmpty) {
+      setState(() => _licenseError = 'Veuillez saisir une clé de licence');
       return;
     }
 
     setState(() {
-      _isCreatingStore = true;
-      _storeError = null;
+      _isLoading = true;
+      _licenseError = null;
     });
 
     try {
-      // 1. Vérifier si l'utilisateur existe déjà
-      final existingUser = await DatabaseHelper.instance.getUserByUsername(_adminUsernameController.text.trim());
+      final result = await LicenseService.activate(licenseKey);
+      
+      if (result.isSuccess) {
+        // ✅ Licence activée et sauvée → Page suivante
+        _nextPage();
+      } else {
+        setState(() => _licenseError = result.message);
+      }
+    } catch (e) {
+      setState(() => _licenseError = 'Erreur: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _completeSetup() async {
+    // Validation des champs (adresse optionnelle)
+    if (_storeNameController.text.trim().isEmpty ||
+        _storeOwnerController.text.trim().isEmpty ||
+        _storePhoneController.text.trim().isEmpty ||
+        _userNameController.text.trim().isEmpty ||
+        _usernameController.text.trim().isEmpty ||
+        _passwordController.text.trim().isEmpty ||
+        _secretCodeController.text.trim().isEmpty) {
+      setState(() => _setupError = 'Les champs marqués * sont obligatoires');
+      return;
+    }
+
+    if (_passwordController.text.length < 6) {
+      setState(() => _setupError = 'Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _setupError = null;
+    });
+
+    try {
+      // Vérifier si username existe déjà
+      final existingUser = await DatabaseHelper.instance.getUserByUsername(_usernameController.text.trim());
       if (existingUser != null) {
-        setState(() {
-          _storeError = 'Ce nom d\'utilisateur existe déjà';
-          _isCreatingStore = false;
-        });
+        setState(() => _setupError = 'Ce nom d\'utilisateur existe déjà');
         return;
       }
 
-      // 2. Créer les informations du magasin
+      // 🏪 Créer/Remplacer le magasin (UN SEUL)
       final storeInfo = StoreInfo(
+        id: 1, // Toujours ID 1
         name: _storeNameController.text.trim(),
-        ownerName: _ownerNameController.text.trim(),
-        phone: _phoneController.text.trim(),
-        email: _emailController.text.trim(),
-        location: _locationController.text.trim(),
+        ownerName: _storeOwnerController.text.trim(),
+        phone: _storePhoneController.text.trim(),
+        email: '', // Optionnel
+        location: _storeAddressController.text.trim().isEmpty 
+            ? 'Non spécifiée' 
+            : _storeAddressController.text.trim(),
         createdAt: DateTime.now().toIso8601String(),
-        updatedAt: DateTime.now().toIso8601String(),
       );
-      await DatabaseHelper.instance.insertStoreInfo(storeInfo);
+      
+      await DatabaseHelper.instance.updateStoreInfo(storeInfo); // UPDATE, pas INSERT
 
-      // 3. Créer le compte administrateur
-      final hashedPassword = sha256.convert(utf8.encode(_adminPasswordController.text)).toString();
-      final hashedSecretCode = sha256.convert(utf8.encode(_secretCodeController.text.trim())).toString();
-      final adminUser = User(
-        username: _adminUsernameController.text.trim(),
+      // 👤 Créer le premier utilisateur ADMIN
+      final hashedPassword = sha256.convert(utf8.encode(_passwordController.text)).toString();
+      final hashedSecretCode = sha256.convert(utf8.encode(_secretCodeController.text)).toString();
+      
+      final user = User(
+        username: _usernameController.text.trim(),
         password: hashedPassword,
-        fullName: _adminFullNameController.text.trim(),
+        fullName: _userNameController.text.trim(),
         role: 'admin',
         secretCode: hashedSecretCode,
         createdAt: DateTime.now().toIso8601String(),
       );
-      await DatabaseHelper.instance.insertUser(adminUser);
+      
+      await DatabaseHelper.instance.insertUser(user);
 
-      // 4. Marquer le premier lancement comme terminé
-      await DatabaseHelper.instance.markFirstLaunchDone();
-
-      // 5. Rediriger vers login
+      // ✅ Setup terminé → Login
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
+        Navigator.of(context).pushReplacementNamed('/login');
       }
     } catch (e) {
-      setState(() {
-        _storeError = 'Erreur lors de la création du compte';
-        _isCreatingStore = false;
-      });
+      setState(() => _setupError = 'Erreur lors de la création: $e');
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.blue.shade50,
-              Colors.indigo.shade50,
-              Colors.purple.shade50,
-            ],
-          ),
-        ),
-        child: Column(
-          children: [
-            // Header avec logo et titre
-            Container(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade600,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.store, color: Colors.white, size: 32),
-                      ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Gestion moderne de magasin',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue.shade700,
-                            ),
-                          ),
-                          Text(
-                            'Configuration initiale',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  
-                  // Barre de progression améliorée
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Étape ${_currentPage + 1} sur 6',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                            Text(
-                              '${((_currentPage + 1) / 6 * 100).round()}%',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: Colors.blue.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        LinearProgressIndicator(
-                          value: (_currentPage + 1) / 6,
-                          backgroundColor: Colors.grey.shade200,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
-                          minHeight: 6,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            // Pages
-            Expanded(
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: PageView(
-                  controller: _pageController,
-                  onPageChanged: (page) {
-                    setState(() => _currentPage = page);
-                    _animationController.reset();
-                    _animationController.forward();
-                  },
+      body: Column(
+        children: [
+          // Barre de progression
+          Container(
+            height: 80,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildWelcomePage(),
-                    _buildFeaturesPage(),
-                    _buildBenefitsPage(),
-                    _buildTutorialPage(),
-                    _buildSecurityPage(),
-                    _buildStoreCreationPage(),
+                    Text(
+                      'Configuration initiale',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      '${_currentPage + 1}/6',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                    ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 12),
+                LinearProgressIndicator(
+                  value: (_currentPage + 1) / 6,
+                  backgroundColor: Colors.grey[300],
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Theme.of(context).primaryColor,
+                  ),
+                ),
+              ],
             ),
-            
-            // Navigation buttons
-            Container(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (_currentPage > 0)
-                    OutlinedButton.icon(
-                      onPressed: _previousPage,
-                      icon: const Icon(Icons.arrow_back),
-                      label: const Text('Précédent'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      ),
-                    )
-                  else
-                    const SizedBox(),
-                  
-                  if (_currentPage < 5)
-                    ElevatedButton.icon(
-                      onPressed: _nextPage,
-                      icon: const Icon(Icons.arrow_forward),
-                      label: const Text('Suivant'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade600,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      ),
-                    )
-                  else
-                    ElevatedButton.icon(
-                      onPressed: _isCreatingStore ? null : _createStoreAndAdmin,
-                      icon: _isCreatingStore 
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.check),
-                      label: Text(_isCreatingStore ? 'Création...' : 'Terminer'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green.shade600,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      ),
-                    ),
-                ],
-              ),
+          ),
+          
+          // Contenu des pages
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              onPageChanged: (index) => setState(() => _currentPage = index),
+              children: [
+                _buildPresentationPage(
+                  title: 'Bienvenue',
+                  subtitle: 'Gestion moderne de magasin',
+                  description: 'Une solution complète pour gérer votre magasin efficacement',
+                  icon: Icons.store,
+                ),
+                _buildPresentationPage(
+                  title: 'Gestion des stocks',
+                  subtitle: 'Inventaire en temps réel',
+                  description: 'Suivez vos produits, gérez les stocks et recevez des alertes',
+                  icon: Icons.inventory,
+                ),
+                _buildPresentationPage(
+                  title: 'Ventes & Achats',
+                  subtitle: 'Transactions simplifiées',
+                  description: 'Enregistrez vos ventes et achats avec facilité',
+                  icon: Icons.point_of_sale,
+                ),
+                _buildPresentationPage(
+                  title: 'Rapports détaillés',
+                  subtitle: 'Analyses et statistiques',
+                  description: 'Obtenez des insights précieux sur votre activité',
+                  icon: Icons.analytics,
+                ),
+                _buildLicensePage(),
+                _buildSetupPage(),
+              ],
             ),
-          ],
-        ),
+          ),
+          
+          // Boutons de navigation
+          Container(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (_currentPage > 0 && _currentPage < 4)
+                  TextButton(
+                    onPressed: _previousPage,
+                    child: const Text('Précédent'),
+                  )
+                else
+                  const SizedBox(width: 80),
+                
+                if (_currentPage < 4)
+                  ElevatedButton(
+                    onPressed: _nextPage,
+                    child: const Text('Suivant'),
+                  )
+                else
+                  const SizedBox(width: 80),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildWelcomePage() {
-    return SingleChildScrollView(
+  Widget _buildPresentationPage({
+    required String title,
+    required String subtitle,
+    required String description,
+    required IconData icon,
+  }) {
+    return Padding(
       padding: const EdgeInsets.all(40),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            width: 150,
+            height: 120,
             decoration: BoxDecoration(
-              color: Colors.blue.shade100,
-              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).primaryColor,
+                  Theme.of(context).primaryColor.withOpacity(0.7),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(60),
             ),
-            child: Icon(Icons.store, size: 80, color: Colors.blue.shade700),
+            child: Icon(
+              icon,
+              size: 60,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 40),
           Text(
-            'Bienvenue dans Gestion moderne de magasin',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+            title,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.blue.shade700,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           Text(
-            'Votre solution complète de gestion de magasin',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.grey.shade600,
+            subtitle,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: Theme.of(context).primaryColor,
+              fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 40),
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+          const SizedBox(height: 24),
+          Text(
+            description,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: Colors.grey[600],
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLicensePage() {
+    return Center(
+      child: Container(
+        width: 500,
+        margin: const EdgeInsets.all(40),
+        child: Card(
+          elevation: 8,
+          shadowColor: Colors.black.withOpacity(0.1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(48),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icône professionnelle
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Theme.of(context).primaryColor,
+                        Theme.of(context).primaryColor.withOpacity(0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(40),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context).primaryColor.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.verified_user,
+                    size: 40,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                
+                // Titre
+                Text(
+                  'Activation de la licence',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                
+                // Sous-titre
+                Text(
+                  'Activez votre application pour continuer',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 40),
+                
+                // Champ licence
+                TextField(
+                  controller: _licenseController,
+                  decoration: InputDecoration(
+                    labelText: 'Clé de licence',
+                    hintText: 'LIC-XXXXXXXXXXXX-XXXXXXXXXXXXXXXX',
+                    prefixIcon: Icon(
+                      Icons.vpn_key,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).primaryColor,
+                        width: 2,
+                      ),
+                    ),
+                    errorText: _licenseError,
+                    errorMaxLines: 2,
+                    filled: true,
+                    fillColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[800]
+                        : Colors.grey[50],
+                  ),
+                  enabled: !_isLoading,
+                  textCapitalization: TextCapitalization.characters,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                
+                // Bouton activation
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _activateLicense,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: _isLoading
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Activation en cours...',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          )
+                        : const Text(
+                            'ACTIVER',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                  ),
+                ),
+                
+                // Message de sécurité
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context).primaryColor.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.security,
+                        color: Theme.of(context).primaryColor,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Votre licence est vérifiée de manière sécurisée',
+                          style: TextStyle(
+                            color: Theme.of(context).primaryColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
-            child: Text(
-              'Gérez facilement vos produits, clients, fournisseurs, ventes et achats en un seul endroit. Une interface moderne et intuitive pour optimiser votre business.',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                height: 1.6,
-              ),
-              textAlign: TextAlign.center,
-            ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildFeaturesPage() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(40),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.indigo.shade100,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(Icons.featured_play_list, size: 80, color: Colors.indigo.shade700),
+  Widget _buildSetupPage() {
+    return Center(
+      child: Container(
+        width: 800,
+        margin: const EdgeInsets.all(40),
+        child: Card(
+          elevation: 8,
+          shadowColor: Colors.black.withOpacity(0.1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          const SizedBox(height: 30),
-          Text(
-            'Fonctionnalités Principales',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.indigo.shade700,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 40),
-          _buildFeatureCard(Icons.inventory_2, 'Gestion des Produits', 'Ajoutez, modifiez et suivez vos produits avec codes-barres', Colors.blue),
-          _buildFeatureCard(Icons.people, 'Gestion des Clients', 'Base de données clients complète avec historique', Colors.green),
-          _buildFeatureCard(Icons.business, 'Gestion des Fournisseurs', 'Suivez vos relations fournisseurs et commandes', Colors.orange),
-          _buildFeatureCard(Icons.point_of_sale, 'Point de Vente', 'Interface de vente rapide et intuitive', Colors.purple),
-          _buildFeatureCard(Icons.analytics, 'Rapports et Analyses', 'Tableaux de bord et statistiques détaillées', Colors.teal),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBenefitsPage() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(40),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.green.shade100,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(Icons.trending_up, size: 80, color: Colors.green.shade700),
-          ),
-          const SizedBox(height: 30),
-          Text(
-            'Avantages Business',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.green.shade700,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 40),
-          _buildBenefitCard('💰', 'Augmentez vos profits', 'Optimisez vos marges et réduisez les pertes grâce aux analyses précises'),
-          _buildBenefitCard('⏱️', 'Gagnez du temps', 'Automatisez vos tâches répétitives et accélérez vos processus'),
-          _buildBenefitCard('📊', 'Prenez de meilleures décisions', 'Basées sur des données précises et des rapports détaillés'),
-          _buildBenefitCard('🔒', 'Sécurisé et fiable', 'Vos données sont protégées et sauvegardées localement'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTutorialPage() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(40),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.purple.shade100,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(Icons.school, size: 80, color: Colors.purple.shade700),
-          ),
-          const SizedBox(height: 30),
-          Text(
-            'Comment commencer',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.purple.shade700,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 40),
-          _buildStepCard('1', 'Configurez votre magasin', 'Entrez les informations de base de votre établissement', Colors.blue),
-          _buildStepCard('2', 'Créez votre compte admin', 'Définissez vos identifiants de connexion sécurisés', Colors.green),
-          _buildStepCard('3', 'Commencez à utiliser', 'Ajoutez vos premiers produits et commencez à vendre', Colors.purple),
-        ],
-      ),
-    );
-  }
-
-
-
-  Widget _buildStoreCreationPage() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(40),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.green.shade100,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(Icons.store_mall_directory, size: 80, color: Colors.green.shade700),
-          ),
-          const SizedBox(height: 30),
-          Text(
-            'Configuration du Magasin',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.green.shade700,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 40),
-          
-          if (_storeError != null)
-            Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.only(bottom: 20),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.shade200),
-              ),
-              child: Row(
+          child: Padding(
+            padding: const EdgeInsets.all(48),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.error_outline, color: Colors.red.shade700),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _storeError!,
-                      style: TextStyle(color: Colors.red.shade700),
+                  // Titre principal
+                  Center(
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Theme.of(context).primaryColor,
+                                Theme.of(context).primaryColor.withOpacity(0.8),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: const Icon(
+                            Icons.store,
+                            size: 30,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Configuration finale',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Créez votre magasin et votre compte administrateur',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  
+                  // Cards en row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Section Magasin
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).primaryColor.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Theme.of(context).primaryColor.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.store,
+                                    color: Theme.of(context).primaryColor,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'Informations du magasin',
+                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: Theme.of(context).primaryColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                              
+                              TextField(
+                                controller: _storeNameController,
+                                decoration: InputDecoration(
+                                  labelText: 'Nom du magasin *',
+                                  hintText: 'Ex: Boutique Centrale',
+                                  prefixIcon: const Icon(Icons.business),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              
+                              TextField(
+                                controller: _storeOwnerController,
+                                decoration: InputDecoration(
+                                  labelText: 'Propriétaire *',
+                                  hintText: 'Ex: Mamadou Diallo',
+                                  prefixIcon: const Icon(Icons.person_outline),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              
+                              TextField(
+                                controller: _storePhoneController,
+                                decoration: InputDecoration(
+                                  labelText: 'Téléphone *',
+                                  hintText: 'Ex: +224 123 456 789',
+                                  prefixIcon: const Icon(Icons.phone),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              
+                              TextField(
+                                controller: _storeAddressController,
+                                decoration: InputDecoration(
+                                  labelText: 'Adresse / Ville',
+                                  hintText: 'Ex: Conakry, Guinée (optionnel)',
+                                  prefixIcon: const Icon(Icons.location_on),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                              ),
+                              
+                              // Devise fixée
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.green[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.green[200]!),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.monetization_on, color: Colors.green[700], size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Devise: GNF (Franc guinéen)',
+                                        style: TextStyle(
+                                          color: Colors.green[700],
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(width: 24),
+                      
+                      // Section Utilisateur
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.orange.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.admin_panel_settings,
+                                    color: Colors.orange[700],
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'Premier administrateur',
+                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.orange[700],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                              
+                              TextField(
+                                controller: _userNameController,
+                                decoration: InputDecoration(
+                                  labelText: 'Nom complet *',
+                                  hintText: 'Ex: Mamadou Diallo',
+                                  prefixIcon: const Icon(Icons.person),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              
+                              TextField(
+                                controller: _usernameController,
+                                decoration: InputDecoration(
+                                  labelText: 'Nom d\'utilisateur *',
+                                  hintText: 'Ex: admin',
+                                  prefixIcon: const Icon(Icons.account_circle),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              
+                              TextField(
+                                controller: _passwordController,
+                                decoration: InputDecoration(
+                                  labelText: 'Mot de passe *',
+                                  hintText: 'Minimum 6 caractères',
+                                  prefixIcon: const Icon(Icons.lock),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                                obscureText: true,
+                              ),
+                              const SizedBox(height: 16),
+                              
+                              TextField(
+                                controller: _secretCodeController,
+                                decoration: InputDecoration(
+                                  labelText: 'Code secret *',
+                                  hintText: 'Pour récupération',
+                                  prefixIcon: const Icon(Icons.security),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                                obscureText: true,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  // Message d'erreur
+                  if (_setupError != null) ...[
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.red[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.red[700], size: 24),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _setupError!,
+                              style: TextStyle(
+                                color: Colors.red[700],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  
+                  const SizedBox(height: 40),
+                  
+                  // Bouton final
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _completeSetup,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                      child: _isLoading
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Text(
+                                  'Configuration en cours...',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : const Text(
+                              'FINALISER LA CONFIGURATION',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
                     ),
                   ),
                 ],
               ),
             ),
-          
-          Container(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: Column(
-              children: [
-                // Informations du magasin
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Informations du Magasin',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      _buildTextField(_storeNameController, 'Nom du magasin', Icons.store),
-                      const SizedBox(height: 16),
-                      _buildTextField(_ownerNameController, 'Nom du propriétaire', Icons.person),
-                      const SizedBox(height: 16),
-                      _buildTextField(_phoneController, 'Téléphone', Icons.phone),
-                      const SizedBox(height: 16),
-                      _buildTextField(_emailController, 'Email', Icons.email),
-                      const SizedBox(height: 16),
-                      _buildTextField(_locationController, 'Lieu du magasin', Icons.location_on),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 30),
-                
-                // Compte administrateur
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Compte Administrateur',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue.shade700,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      _buildTextField(_adminFullNameController, 'Nom complet de l\'administrateur', Icons.person),
-                      const SizedBox(height: 16),
-                      _buildTextField(_adminUsernameController, 'Nom d\'utilisateur admin', Icons.admin_panel_settings),
-                      const SizedBox(height: 16),
-                      _buildTextField(_adminPasswordController, 'Mot de passe', Icons.lock, isPassword: true),
-                      const SizedBox(height: 16),
-                      _buildTextField(_confirmPasswordController, 'Confirmer le mot de passe', Icons.lock_outline, isPassword: true),
-                      const SizedBox(height: 16),
-                      _buildTextField(_secretCodeController, 'Code secret (pour réinitialisation)', Icons.security, isPassword: true),
-                    ],
-                  ),
-                ),
-              ],
-            ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSecurityPage() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(40),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade100,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(Icons.security, size: 80, color: Colors.orange.shade700),
-          ),
-          const SizedBox(height: 30),
-          Text(
-            'Sécurité et Confidentialité',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.orange.shade700,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 40),
-          _buildSecurityCard('🔒', 'Données 100% locales', 'Toutes vos données sont stockées localement sur votre appareil'),
-          _buildSecurityCard('🚫', 'Aucune connexion Internet requise', 'L\'application fonctionne complètement hors ligne'),
-          _buildSecurityCard('🔐', 'Chiffrement des mots de passe', 'Vos mots de passe sont sécurisés avec un chiffrement avancé'),
-          _buildSecurityCard('📊', 'Sauvegarde locale', 'Vos données sont automatiquement sauvegardées dans la base SQLite'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSecurityCard(String emoji, String title, String description) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.orange.shade50,
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Center(
-              child: Text(emoji, style: const TextStyle(fontSize: 28)),
-            ),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  description,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.4),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isPassword = false}) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
         ),
-        prefixIcon: Icon(icon),
-        filled: true,
-        fillColor: Colors.grey.shade50,
-      ),
-      obscureText: isPassword,
-    );
-  }
-
-  Widget _buildFeatureCard(IconData icon, String title, String description, MaterialColor color) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.shade100,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, size: 32, color: color.shade700),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBenefitCard(String emoji, String title, String description) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Center(
-              child: Text(emoji, style: const TextStyle(fontSize: 28)),
-            ),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  description,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.4),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepCard(String number, String title, String description, MaterialColor color) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: color.shade600,
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: Center(
-              child: Text(
-                number,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  description,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.4),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
