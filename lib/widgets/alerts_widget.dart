@@ -195,7 +195,7 @@ class _AlertsWidgetState extends State<AlertsWidget> {
                   Padding(
                     padding: const EdgeInsets.only(left: 24),
                     child: Text(
-                      'Total: ${CurrencyFormatter.formatGNF(_unpaidSales.fold(0.0, (sum, sale) => sum + (sale.totalAmount ?? 0)))}',
+                      'Total: ${CurrencyFormatter.formatGNF(_unpaidSales.fold<double>(0.0, (sum, sale) => sum + (sale.totalAmount ?? 0)))}',
                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                     ),
                   ),
@@ -218,7 +218,7 @@ class _AlertsWidgetState extends State<AlertsWidget> {
                   ..._suppliersWithDebt.take(2).map((supplier) => Padding(
                     padding: const EdgeInsets.only(left: 24, bottom: 2),
                     child: Text(
-                      '• ${supplier.name}: ${CurrencyFormatter.formatGNF(supplier.balance ?? 0)}',
+                      '• ${supplier.name}: ${CurrencyFormatter.formatGNF(supplier.balance)}',
                       style: const TextStyle(fontSize: 12),
                     ),
                   )),

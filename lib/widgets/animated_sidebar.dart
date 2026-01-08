@@ -219,7 +219,7 @@ class _AnimatedSidebarState extends State<AnimatedSidebar> with TickerProviderSt
                   ),
                 const Divider(height: 32),
                 // Désactivation licence - Réservé aux admins
-                if (widget.currentUser.role?.toLowerCase() == 'admin')
+                if (widget.currentUser.role?.toLowerCase() == 'adminjhhj')
                   _buildMenuItem(
                     icon: Icons.security,
                     title: 'Désactiver licence',

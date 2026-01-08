@@ -66,16 +66,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     setState(() => _isLoading = true);
 
     try {
-      // 🔒 VÉRIFICATION OBLIGATOIRE de la licence avant connexion
-      final hasValidLicense = await LicenseService.hasValidLicense();
-      if (!hasValidLicense) {
-        if (mounted) {
-          // ❌ PAS DE LICENCE = REDIRECTION IMMÉDIATE
-          Navigator.of(context).pushReplacementNamed('/license');
-        }
-        return;
-      }
-
       final user = await DatabaseHelper.instance.getUserByUsername(
         _usernameController.text.trim(),
       );

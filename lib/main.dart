@@ -59,19 +59,19 @@ class _MyAppState extends State<MyApp> {
   /// Résout la route initiale selon la RÈGLE PRINCIPALE
   Future<String> _resolveInitialRoute() async {
     try {
-      // 🔒 RÈGLE PRINCIPALE : Vérifier UNIQUEMENT SQLite
-      final settings = await DatabaseHelper.instance.getAppSettings();
+      // 🔒 RÈGLE PRINCIPALE : Vérifier si des utilisateurs existent
+      final users = await DatabaseHelper.instance.getUsers();
       
-      if (settings != null && settings.license != null && settings.license!.isNotEmpty) {
-        // ✅ Licence valide existe → Login direct
+      if (users.isNotEmpty) {
+        // ✅ Utilisateurs existent → Login direct
         return '/login';
       } else {
-        // ❌ Pas de licence → Flux 6 pages
+        // ❌ Pas d'utilisateurs → Configuration initiale
         return '/first-launch';
       }
     } catch (e) {
       debugPrint('ROUTE RESOLUTION ERROR => $e');
-      // 🔒 En cas d'erreur → Flux 6 pages par défaut
+      // 🔒 En cas d'erreur → Configuration initiale par défaut
       return '/first-launch';
     }
   }
@@ -119,11 +119,11 @@ class _MyAppState extends State<MyApp> {
       ),
       themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
 
-      /// 🔒 LOGIQUE SIMPLE : SQLITE SEULE SOURCE DE VÉRITÉ
+      /// 🔒 LOGIQUE SIMPLE : VÉRIFICATION UTILISATEURS
       home: FutureBuilder<String>(
         future: _resolveInitialRoute(),
         builder: (context, snapshot) {
-          // Loader pendant la vérification SQLite
+          // Loader pendant la vérification
           if (snapshot.connectionState != ConnectionState.done) {
             return Scaffold(
               body: Center(
@@ -149,7 +149,7 @@ class _MyAppState extends State<MyApp> {
               return const LoginScreen();
             case '/first-launch':
             default:
-              // 🔒 PAR DÉFAUT : Flux 6 pages
+              // 🔒 PAR DÉFAUT : Configuration initiale
               return const FirstLaunchScreen();
           }
         },
@@ -203,38 +203,10 @@ class _MyAppState extends State<MyApp> {
   ) {
     final args = settings.arguments;
 
-    // 🔒 Sécurité : Vérifier licence avant accès aux routes sécurisées
+    // 🔒 Sécurité : Vérifier utilisateur avant accès aux routes sécurisées
     if (args == null || args is! User) {
       return MaterialPageRoute(
-        builder: (_) => FutureBuilder<bool>(
-          future: _hasValidLicense(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return Scaffold(
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Vérification...',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-            
-            final hasLicense = snapshot.data ?? false;
-            if (hasLicense) {
-              return const LoginScreen();
-            } else {
-              return const FirstLaunchScreen();
-            }
-          },
-        ),
+        builder: (_) => const LoginScreen(),
       );
     }
 

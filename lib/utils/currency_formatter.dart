@@ -1,21 +1,16 @@
 import 'package:intl/intl.dart';
 
-/// Utilitaire pour le formatage monétaire en GNF
+/// Utilitaire pour formater les montants en GNF (Franc Guinéen)
 class CurrencyFormatter {
-  static final NumberFormat _formatter = NumberFormat('#,##0', 'fr_FR');
-  
-  /// Formate un montant en GNF avec séparateur de milliers
-  static String formatGNF(double amount) {
-    return '${_formatter.format(amount)} GNF';
-  }
-  
-  /// Formate un montant en GNF sans décimales
-  static String formatGNFInt(int amount) {
-    return '${_formatter.format(amount)} GNF';
-  }
-  
-  /// Formate un montant avec séparateur de milliers seulement
-  static String formatNumber(double amount) {
-    return _formatter.format(amount);
+  static final NumberFormat _gnfFormatter = NumberFormat.currency(
+    locale: 'fr_GN',
+    symbol: 'GNF',
+    decimalDigits: 0,
+  );
+
+  /// Formate un montant en GNF
+  static String formatGNF(double? amount) {
+    if (amount == null) return '0 GNF';
+    return _gnfFormatter.format(amount);
   }
 }

@@ -4,6 +4,7 @@ import '../core/database/database_helper.dart';
 import '../models/user.dart';
 import '../models/product.dart';
 import '../utils/barcode_generator.dart';
+import '../utils/currency_formatter.dart';
 
 /// Contenu de gestion des produits avec DataTable avancée
 class ProductsContent extends StatefulWidget {
@@ -108,8 +109,8 @@ class _ProductsContentState extends State<ProductsContent> {
               product.name,
               product.barcode ?? '',
               product.category ?? '',
-              '${product.purchasePrice?.toStringAsFixed(2) ?? '0'} €',
-              '${product.salePrice?.toStringAsFixed(2) ?? '0'} €',
+              CurrencyFormatter.formatGNF(product.purchasePrice),
+              CurrencyFormatter.formatGNF(product.salePrice),
               product.stockQuantity?.toString() ?? '0',
               product.stockAlertThreshold?.toString() ?? '0',
               product.isLowStock ? 'ALERTE' : 'OK',

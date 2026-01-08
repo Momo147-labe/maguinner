@@ -4,9 +4,8 @@ import 'dart:convert';
 import '../core/database/database_helper.dart';
 import '../models/store_info.dart';
 import '../models/user.dart';
-import '../services/license_service.dart';
 
-/// 🎆 Flux de premier lancement - 6 pages
+/// 🎆 Flux de premier lancement - 5 pages
 class FirstLaunchScreen extends StatefulWidget {
   const FirstLaunchScreen({super.key});
 
@@ -18,10 +17,6 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   bool _isLoading = false;
-  
-  // Contrôleurs pour la page licence
-  final _licenseController = TextEditingController();
-  String? _licenseError;
   
   // Contrôleurs pour la page magasin + utilisateur
   final _storeNameController = TextEditingController();
@@ -37,7 +32,6 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
   @override
   void dispose() {
     _pageController.dispose();
-    _licenseController.dispose();
     _storeNameController.dispose();
     _storeOwnerController.dispose();
     _storePhoneController.dispose();
@@ -50,7 +44,7 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
   }
 
   void _nextPage() {
-    if (_currentPage < 5) {
+    if (_currentPage < 4) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -64,35 +58,6 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
-    }
-  }
-
-  Future<void> _activateLicense() async {
-    final licenseKey = _licenseController.text.trim();
-    
-    if (licenseKey.isEmpty) {
-      setState(() => _licenseError = 'Veuillez saisir une clé de licence');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _licenseError = null;
-    });
-
-    try {
-      final result = await LicenseService.activate(licenseKey);
-      
-      if (result.isSuccess) {
-        // ✅ Licence activée et sauvée → Page suivante
-        _nextPage();
-      } else {
-        setState(() => _licenseError = result.message);
-      }
-    } catch (e) {
-      setState(() => _licenseError = 'Erreur: $e');
-    } finally {
-      setState(() => _isLoading = false);
     }
   }
 
@@ -189,7 +154,7 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
                       ),
                     ),
                     Text(
-                      '${_currentPage + 1}/6',
+                      '${_currentPage + 1}/5',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -198,7 +163,7 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
                 ),
                 const SizedBox(height: 12),
                 LinearProgressIndicator(
-                  value: (_currentPage + 1) / 6,
+                  value: (_currentPage + 1) / 5,
                   backgroundColor: Colors.grey[300],
                   valueColor: AlwaysStoppedAnimation<Color>(
                     Theme.of(context).primaryColor,
@@ -238,7 +203,6 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
                   description: 'Obtenez des insights précieux sur votre activité',
                   icon: Icons.analytics,
                 ),
-                _buildLicensePage(),
                 _buildSetupPage(),
               ],
             ),
@@ -285,7 +249,7 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 150,
+            width: 120,
             height: 120,
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -329,194 +293,6 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
             textAlign: TextAlign.center,
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildLicensePage() {
-    return Center(
-      child: Container(
-        width: 500,
-        margin: const EdgeInsets.all(40),
-        child: Card(
-          elevation: 8,
-          shadowColor: Colors.black.withOpacity(0.1),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(48),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Icône professionnelle
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Theme.of(context).primaryColor,
-                        Theme.of(context).primaryColor.withOpacity(0.8),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(40),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(context).primaryColor.withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.verified_user,
-                    size: 40,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                
-                // Titre
-                Text(
-                  'Activation de la licence',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                
-                // Sous-titre
-                Text(
-                  'Activez votre application pour continuer',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.grey[600],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 40),
-                
-                // Champ licence
-                TextField(
-                  controller: _licenseController,
-                  decoration: InputDecoration(
-                    labelText: 'Clé de licence',
-                    hintText: 'LIC-XXXXXXXXXXXX-XXXXXXXXXXXXXXXX',
-                    prefixIcon: Icon(
-                      Icons.vpn_key,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: Theme.of(context).primaryColor,
-                        width: 2,
-                      ),
-                    ),
-                    errorText: _licenseError,
-                    errorMaxLines: 2,
-                    filled: true,
-                    fillColor: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey[800]
-                        : Colors.grey[50],
-                  ),
-                  enabled: !_isLoading,
-                  textCapitalization: TextCapitalization.characters,
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                
-                // Bouton activation
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _activateLicense,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).primaryColor,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 2,
-                    ),
-                    child: _isLoading
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Activation en cours...',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          )
-                        : const Text(
-                            'ACTIVER',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                  ),
-                ),
-                
-                // Message de sécurité
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Theme.of(context).primaryColor.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.security,
-                        color: Theme.of(context).primaryColor,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Votre licence est vérifiée de manière sécurisée',
-                          style: TextStyle(
-                            color: Theme.of(context).primaryColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
