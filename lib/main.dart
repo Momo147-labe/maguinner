@@ -4,9 +4,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'core/database/database_helper.dart';
 import 'theme.dart';
 import 'services/theme_service.dart';
-import 'services/license_service.dart';
 import 'screens/login_screen.dart';
-import 'screens/license_screen.dart';
 import 'screens/first_launch_screen.dart';
 import 'layouts/main_layout.dart';
 import 'models/user.dart';
@@ -86,15 +84,6 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  /// Vérifie si une licence valide existe
-  Future<bool> _hasValidLicense() async {
-    try {
-      final settings = await DatabaseHelper.instance.getAppSettings();
-      return settings != null && settings.license != null && settings.license!.isNotEmpty;
-    } catch (_) {
-      return false;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

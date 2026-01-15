@@ -46,7 +46,7 @@ class _StoreContentState extends State<StoreContent> {
 
   Future<void> _changeAppColor() async {
     Color? selectedColor;
-    
+
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -75,7 +75,9 @@ class _StoreContentState extends State<StoreContent> {
                           color: color,
                           borderRadius: BorderRadius.circular(25),
                           border: Border.all(
-                            color: _currentPrimaryColor == color ? Colors.black : Colors.grey,
+                            color: _currentPrimaryColor == color
+                                ? Colors.black
+                                : Colors.grey,
                             width: _currentPrimaryColor == color ? 3 : 1,
                           ),
                         ),
@@ -131,16 +133,20 @@ class _StoreContentState extends State<StoreContent> {
 
     if (selectedColor != null) {
       await ThemeService.savePrimaryColor(selectedColor!);
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Couleur changée en ${ThemeService.getColorName(selectedColor!)}'),
+          content: Text(
+            'Couleur changée en ${ThemeService.getColorName(selectedColor!)}',
+          ),
           backgroundColor: Colors.green,
         ),
       );
-      
+
       // Redémarrer l'application pour appliquer la nouvelle couleur
-      Navigator.of(context).pushNamedAndRemoveUntil('/restart', (route) => false);
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil('/restart', (route) => false);
     }
   }
 
@@ -202,14 +208,14 @@ class _StoreContentState extends State<StoreContent> {
       );
 
       await DatabaseHelper.instance.updateStoreInfo(updatedStore);
-      
+
       if (mounted) {
         setState(() {
           _storeInfo = updatedStore;
           _isEditing = false;
           _isSaving = false;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Informations du magasin mises à jour avec succès'),
@@ -241,8 +247,6 @@ class _StoreContentState extends State<StoreContent> {
     });
   }
 
-
-
   void _showMessage(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -264,20 +268,24 @@ class _StoreContentState extends State<StoreContent> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.store_mall_directory, size: 64, color: Colors.grey.shade400),
+            Icon(
+              Icons.store_mall_directory,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
             const SizedBox(height: 16),
             Text(
               'Aucune information de magasin trouvée',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Colors.grey.shade600,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(color: Colors.grey.shade600),
             ),
             const SizedBox(height: 8),
             Text(
               'Veuillez contacter l\'administrateur',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey.shade500,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade500),
             ),
           ],
         ),
@@ -290,95 +298,232 @@ class _StoreContentState extends State<StoreContent> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(Icons.store_mall_directory, color: Colors.blue.shade700, size: 32),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
+          // Header responsive
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 800;
+
+              if (isNarrow) {
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Mon Magasin',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Gérez les informations de votre établissement',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).brightness == Brightness.dark 
-                            ? Colors.grey.shade300 
-                            : Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (!_isEditing) ...[
-                ElevatedButton.icon(
-                  onPressed: () => setState(() => _isEditing = true),
-                  icon: const Icon(Icons.edit),
-                  label: const Text('Modifier'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade600,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                if (widget.currentUser != null)
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => BadgesScreen(currentUser: widget.currentUser!),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.store_rounded,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
+                            size: 32,
+                          ),
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.badge),
-                    label: const Text('Badges'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple.shade600,
-                      foregroundColor: Colors.white,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Mon Magasin',
+                                style: Theme.of(context).textTheme.headlineSmall
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                'Gérez les informations de votre établissement',
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: _changeAppColor,
-                  icon: const Icon(Icons.palette),
-                  label: const Text('Couleur'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _currentPrimaryColor,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const UserGuideScreen(),
+                    if (!_isEditing) ...[
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FilledButton.icon(
+                            onPressed: () => setState(() => _isEditing = true),
+                            icon: const Icon(Icons.edit_rounded),
+                            label: const Text('Modifier'),
+                            style: FilledButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                          if (widget.currentUser != null)
+                            FilledButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => BadgesScreen(
+                                      currentUser: widget.currentUser!,
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.badge_rounded),
+                              label: const Text('Badges'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.purple,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          FilledButton.icon(
+                            onPressed: _changeAppColor,
+                            icon: const Icon(Icons.palette_rounded),
+                            label: const Text('Couleur'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: _currentPrimaryColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const UserGuideScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.help_outline_rounded),
+                            label: const Text('Guide'),
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.help_outline),
-                  label: const Text('Guide d\'utilisation'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange.shade600,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
-            ],
+                    ],
+                  ],
+                );
+              } else {
+                return Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.store_rounded,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Mon Magasin',
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'Gérez les informations de votre établissement',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!_isEditing) ...[
+                      FilledButton.icon(
+                        onPressed: () => setState(() => _isEditing = true),
+                        icon: const Icon(Icons.edit_rounded),
+                        label: const Text('Modifier'),
+                        style: FilledButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      if (widget.currentUser != null)
+                        FilledButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => BadgesScreen(
+                                  currentUser: widget.currentUser!,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.badge_rounded),
+                          label: const Text('Badges'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.purple,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: 12),
+                      FilledButton.icon(
+                        onPressed: _changeAppColor,
+                        icon: const Icon(Icons.palette_rounded),
+                        label: const Text('Couleur'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _currentPrimaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const UserGuideScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.help_outline_rounded),
+                        label: const Text('Guide'),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              }
+            },
           ),
           const SizedBox(height: 32),
 
@@ -388,18 +533,22 @@ class _StoreContentState extends State<StoreContent> {
               padding: const EdgeInsets.all(16),
               margin: const EdgeInsets.only(bottom: 24),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                color: Theme.of(context).colorScheme.errorContainer,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.shade200),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.error_outline, color: Colors.red.shade700),
+                  Icon(
+                    Icons.error_outline_rounded,
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       _error!,
-                      style: TextStyle(color: Colors.red.shade700),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
                     ),
                   ),
                 ],
@@ -407,8 +556,18 @@ class _StoreContentState extends State<StoreContent> {
             ),
 
           // Store information card
-          Card(
-            elevation: 2,
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardTheme.color,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Form(
@@ -416,21 +575,32 @@ class _StoreContentState extends State<StoreContent> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Informations du Magasin',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Text(
+                            'Informations du Magasin',
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 24),
-                    
+
                     Row(
                       children: [
                         Expanded(
                           child: _buildFormField(
                             controller: _nameController,
                             label: 'Nom du magasin',
-                            icon: Icons.store,
+                            icon: Icons.store_rounded,
                             validator: (value) {
                               if (value?.trim().isEmpty ?? true) {
                                 return 'Nom du magasin obligatoire';
@@ -444,7 +614,7 @@ class _StoreContentState extends State<StoreContent> {
                           child: _buildFormField(
                             controller: _ownerController,
                             label: 'Propriétaire',
-                            icon: Icons.person,
+                            icon: Icons.person_rounded,
                             validator: (value) {
                               if (value?.trim().isEmpty ?? true) {
                                 return 'Nom du propriétaire obligatoire';
@@ -456,14 +626,14 @@ class _StoreContentState extends State<StoreContent> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    
+
                     Row(
                       children: [
                         Expanded(
                           child: _buildFormField(
                             controller: _phoneController,
                             label: 'Téléphone',
-                            icon: Icons.phone,
+                            icon: Icons.phone_rounded,
                             validator: (value) {
                               if (value?.trim().isEmpty ?? true) {
                                 return 'Téléphone obligatoire';
@@ -477,12 +647,14 @@ class _StoreContentState extends State<StoreContent> {
                           child: _buildFormField(
                             controller: _emailController,
                             label: 'Email',
-                            icon: Icons.email,
+                            icon: Icons.email_rounded,
                             validator: (value) {
                               if (value?.trim().isEmpty ?? true) {
                                 return 'Email obligatoire';
                               }
-                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value!.trim())) {
+                              if (!RegExp(
+                                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                              ).hasMatch(value!.trim())) {
                                 return 'Email invalide';
                               }
                               return null;
@@ -492,11 +664,11 @@ class _StoreContentState extends State<StoreContent> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    
+
                     _buildFormField(
                       controller: _locationController,
                       label: 'Localisation',
-                      icon: Icons.location_on,
+                      icon: Icons.location_on_rounded,
                       validator: (value) {
                         if (value?.trim().isEmpty ?? true) {
                           return 'Localisation obligatoire';
@@ -504,26 +676,49 @@ class _StoreContentState extends State<StoreContent> {
                         return null;
                       },
                     ),
-                    
+
                     if (_isEditing) ...[
                       const SizedBox(height: 32),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          OutlinedButton(
+                          TextButton(
                             onPressed: _isSaving ? null : _cancelEdit,
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                             child: const Text('Annuler'),
                           ),
                           const SizedBox(width: 12),
-                          ElevatedButton.icon(
+                          FilledButton.icon(
                             onPressed: _isSaving ? null : _saveStoreInfo,
-                            icon: _isSaving 
-                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                                : const Icon(Icons.save),
-                            label: Text(_isSaving ? 'Sauvegarde...' : 'Sauvegarder'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green.shade600,
-                              foregroundColor: Colors.white,
+                            icon: _isSaving
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.save_rounded),
+                            label: Text(
+                              _isSaving ? 'Sauvegarde...' : 'Sauvegarder',
+                            ),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
                         ],
@@ -534,32 +729,51 @@ class _StoreContentState extends State<StoreContent> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Store statistics card
-          Card(
-            elevation: 2,
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardTheme.color,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Informations Système',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.analytics_rounded,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Informations Système',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   Row(
                     children: [
                       Expanded(
                         child: _buildInfoTile(
                           'Date de création',
                           _formatDate(_storeInfo!.createdAt),
-                          Icons.calendar_today,
+                          Icons.calendar_today_rounded,
                           Colors.blue,
                         ),
                       ),
@@ -568,7 +782,7 @@ class _StoreContentState extends State<StoreContent> {
                         child: _buildInfoTile(
                           'Dernière modification',
                           _formatDate(_storeInfo!.updatedAt),
-                          Icons.update,
+                          Icons.update_rounded,
                           Colors.orange,
                         ),
                       ),
@@ -578,12 +792,22 @@ class _StoreContentState extends State<StoreContent> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Developer information card (read-only)
-          Card(
-            elevation: 2,
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardTheme.color,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -594,44 +818,70 @@ class _StoreContentState extends State<StoreContent> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.purple.shade100,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.secondaryContainer,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(Icons.code, color: Colors.purple.shade700, size: 20),
+                        child: Icon(
+                          Icons.code_rounded,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSecondaryContainer,
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        'Informations du Développeur',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Flexible(
+                        child: Text(
+                          'Informations du Développeur',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 20),
-                  
+
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).brightness == Brightness.dark 
+                      color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.purple.shade900.withValues(alpha: 0.3)
                           : Colors.purple.shade50,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Theme.of(context).brightness == Brightness.dark 
+                        color: Theme.of(context).brightness == Brightness.dark
                             ? Colors.purple.shade700
                             : Colors.purple.shade200,
                       ),
                     ),
                     child: Column(
                       children: [
-                        _buildDeveloperInfoRow('Nom complet', 'Fodé Momo Soumah', Icons.person),
+                        _buildDeveloperInfoRow(
+                          'Nom complet',
+                          'Fodé Momo Soumah',
+                          Icons.person,
+                        ),
                         const SizedBox(height: 12),
-                        _buildDeveloperInfoRow('Téléphone', '627172530 / 666761076', Icons.phone),
+                        _buildDeveloperInfoRow(
+                          'Téléphone',
+                          '627172530 / 666761076',
+                          Icons.phone,
+                        ),
                         const SizedBox(height: 12),
-                        _buildDeveloperInfoRow('Email', 'fodemomos11@gmail.com', Icons.email),
+                        _buildDeveloperInfoRow(
+                          'Email',
+                          'fodemomos11@gmail.com',
+                          Icons.email,
+                        ),
                         const SizedBox(height: 12),
-                        _buildDeveloperInfoRow('Adresse', 'Hafia (Labé)', Icons.location_on),
+                        _buildDeveloperInfoRow(
+                          'Adresse',
+                          'Hafia (Labé)',
+                          Icons.location_on,
+                        ),
                       ],
                     ),
                   ),
@@ -647,7 +897,7 @@ class _StoreContentState extends State<StoreContent> {
   Widget _buildDeveloperInfoRow(String label, String value, IconData icon) {
     return Row(
       children: [
-        Icon(icon, color: Colors.purple.shade600, size: 18),
+        Icon(icon, color: Theme.of(context).colorScheme.primary, size: 18),
         const SizedBox(width: 12),
         SizedBox(
           width: 120,
@@ -655,15 +905,16 @@ class _StoreContentState extends State<StoreContent> {
             '$label:',
             style: TextStyle(
               fontWeight: FontWeight.w600,
-              color: Colors.purple.shade700,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -677,41 +928,65 @@ class _StoreContentState extends State<StoreContent> {
     required IconData icon,
     String? Function(String?)? validator,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return TextFormField(
       controller: controller,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
-        fillColor: _isEditing 
-            ? (Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade800 : Colors.white)
-            : (Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade900 : Colors.grey.shade50),
+        fillColor: _isEditing
+            ? (isDark
+                  ? theme.colorScheme.surfaceContainerHighest
+                  : theme.colorScheme.surface)
+            : (isDark
+                  ? theme.colorScheme.surfaceContainer
+                  : theme.colorScheme.surfaceContainerLow),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: theme.dividerColor.withOpacity(0.5)),
+        ),
       ),
       enabled: _isEditing,
       validator: validator,
     );
   }
 
-  Widget _buildInfoTile(String title, String value, IconData icon, MaterialColor color) {
+  Widget _buildInfoTile(
+    String title,
+    String value,
+    IconData icon,
+    MaterialColor color,
+  ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = isDark ? color.shade200 : color.shade700;
+    final containerColor = isDark
+        ? color.shade900.withOpacity(0.3)
+        : color.shade50;
+    final iconContainerColor = isDark
+        ? color.shade800.withOpacity(0.5)
+        : color.shade100;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.shade50,
+        color: containerColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.shade200),
+        border: Border.all(color: isDark ? color.shade800 : color.shade200),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.shade100,
+              color: iconContainerColor,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: color.shade700, size: 20),
+            child: Icon(icon, color: primaryColor, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -722,9 +997,7 @@ class _StoreContentState extends State<StoreContent> {
                   title,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Theme.of(context).brightness == Brightness.dark 
-                        ? Colors.grey.shade400 
-                        : Colors.grey.shade600,
+                    color: theme.colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -734,7 +1007,7 @@ class _StoreContentState extends State<StoreContent> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: color.shade700,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ],

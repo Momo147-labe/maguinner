@@ -122,12 +122,16 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.business, color: Colors.blue.shade600, size: 32),
+                Icon(Icons.business, color: Colors.blue.shade600, size: 24),
                 const SizedBox(width: 12),
-                Text(
-                  'Informations Fournisseur',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    'Informations Fournisseur',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -152,14 +156,22 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: 100,
             child: Text(
               '$label:',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
+          const SizedBox(width: 8),
           Expanded(
-            child: Text(value),
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 13),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -252,12 +264,16 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.history, color: Colors.purple.shade600, size: 32),
+                Icon(Icons.history, color: Colors.purple.shade600, size: 24),
                 const SizedBox(width: 12),
-                Text(
-                  'Historique des Transactions',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    'Historique des Transactions',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -342,13 +358,25 @@ class _SupplierDetailsScreenState extends State<SupplierDetailsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: Text(_productNames[line.productId] ?? 'Produit inconnu'),
+                        flex: 2,
+                        child: Text(
+                          _productNames[line.productId] ?? 'Produit inconnu',
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      Text('${line.quantity} × ${CurrencyFormatter.formatGNF(line.purchasePrice ?? 0)}'),
-                      const SizedBox(width: 16),
-                      Text(
-                        CurrencyFormatter.formatGNF(line.subtotal ?? 0),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      Flexible(
+                        child: Text(
+                          '${line.quantity} × ${CurrencyFormatter.formatGNF(line.purchasePrice ?? 0)}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          CurrencyFormatter.formatGNF(line.subtotal ?? 0),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),

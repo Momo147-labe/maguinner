@@ -26,7 +26,8 @@ class AnimatedSidebar extends StatefulWidget {
   State<AnimatedSidebar> createState() => _AnimatedSidebarState();
 }
 
-class _AnimatedSidebarState extends State<AnimatedSidebar> with TickerProviderStateMixin {
+class _AnimatedSidebarState extends State<AnimatedSidebar>
+    with TickerProviderStateMixin {
   late AnimationController _hoverController;
   String? _hoveredItem;
 
@@ -65,49 +66,39 @@ class _AnimatedSidebarState extends State<AnimatedSidebar> with TickerProviderSt
           // Header avec logo et horloge
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                ],
-              ),
-            ),
             child: Column(
               children: [
                 // Logo
                 Container(
-                  width: 60,
-                  height: 60,
+                  width: 64,
+                  height: 64,
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
-                  child: Icon(
-                    Icons.store,
+                  child: const Icon(
+                    Icons.store_rounded,
                     size: 32,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 12),
-                
+                const SizedBox(height: 16),
+
                 // Nom du magasin
                 Text(
-                  widget.storeInfo?.name ?? 'Gestion moderne de magasin',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  widget.storeInfo?.name ?? 'Gestion Magasin',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -116,40 +107,43 @@ class _AnimatedSidebarState extends State<AnimatedSidebar> with TickerProviderSt
                   const SizedBox(height: 4),
                   Text(
                     widget.storeInfo!.ownerName,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
-                const SizedBox(height: 8),
-                
-                // Horloge temps réel
+                const SizedBox(height: 16),
+
+                // Horloge temps réel - Style badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(30),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.access_time,
-                        color: Colors.white,
+                      Icon(
+                        Icons.access_time_rounded,
+                        color: Theme.of(context).colorScheme.primary,
                         size: 16,
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       Text(
                         widget.currentTime,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                           fontFamily: 'monospace',
                         ),
                       ),
@@ -159,7 +153,7 @@ class _AnimatedSidebarState extends State<AnimatedSidebar> with TickerProviderSt
               ],
             ),
           ),
-          
+
           // Menu items
           Expanded(
             child: ListView(
@@ -249,7 +243,7 @@ class _AnimatedSidebarState extends State<AnimatedSidebar> with TickerProviderSt
   }) {
     final isSelected = widget.currentRoute == route;
     final isHovered = _hoveredItem == route;
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: MouseRegion(
@@ -267,12 +261,14 @@ class _AnimatedSidebarState extends State<AnimatedSidebar> with TickerProviderSt
             color: isSelected
                 ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                 : isHovered
-                    ? Theme.of(context).colorScheme.primary.withOpacity(0.05)
-                    : Colors.transparent,
+                ? Theme.of(context).colorScheme.primary.withOpacity(0.05)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: isSelected
                 ? Border.all(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.3),
                     width: 1,
                   )
                 : null,
@@ -292,8 +288,8 @@ class _AnimatedSidebarState extends State<AnimatedSidebar> with TickerProviderSt
                 color: isSelected
                     ? Theme.of(context).colorScheme.primary
                     : (isLogout || isDeactivate)
-                        ? Colors.red
-                        : Theme.of(context).colorScheme.onSurface,
+                    ? Colors.red
+                    : Theme.of(context).colorScheme.onSurface,
                 size: 20,
               ),
             ),
@@ -303,8 +299,8 @@ class _AnimatedSidebarState extends State<AnimatedSidebar> with TickerProviderSt
                 color: isSelected
                     ? Theme.of(context).colorScheme.primary
                     : (isLogout || isDeactivate)
-                        ? Colors.red
-                        : Theme.of(context).colorScheme.onSurface,
+                    ? Colors.red
+                    : Theme.of(context).colorScheme.onSurface,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 fontSize: 14,
               ),
@@ -365,13 +361,12 @@ class _AnimatedSidebarState extends State<AnimatedSidebar> with TickerProviderSt
     try {
       // 🔒 Désactivation stricte
       await LicenseService.deactivate();
-      
+
       if (mounted) {
         // ❌ Redirection OBLIGATOIRE vers écran licence
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/license',
-          (route) => false,
-        );
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/license', (route) => false);
       }
     } catch (e) {
       if (mounted) {

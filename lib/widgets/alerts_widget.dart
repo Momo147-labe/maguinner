@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import '../core/database/database_helper.dart';
 import '../models/product.dart';
 import '../models/sale.dart';
-import '../models/customer.dart';
+
 import '../models/supplier.dart';
 import '../utils/currency_formatter.dart';
 
 class AlertsWidget extends StatefulWidget {
-  const AlertsWidget({Key? key}) : super(key: key);
+  final Color? iconColor;
+
+  const AlertsWidget({Key? key, this.iconColor}) : super(key: key);
 
   @override
   State<AlertsWidget> createState() => _AlertsWidgetState();
@@ -33,20 +35,23 @@ class _AlertsWidgetState extends State<AlertsWidget> {
       final suppliers = await DatabaseHelper.instance.getSuppliers();
 
       // Produits en rupture de stock
-      final lowStock = products.where((p) => 
-        (p.stockQuantity ?? 0) <= (p.stockAlertThreshold ?? 10)
-      ).toList();
+      final lowStock = products
+          .where((p) => (p.stockQuantity ?? 0) <= (p.stockAlertThreshold ?? 10))
+          .toList();
 
       // Produits les moins vendus (simulation basée sur le stock élevé)
-      final lowSales = products.where((p) => 
-        (p.stockQuantity ?? 0) > 50
-      ).take(5).toList();
+      final lowSales = products
+          .where((p) => (p.stockQuantity ?? 0) > 50)
+          .take(5)
+          .toList();
 
       // Ventes impayées (crédit)
       final unpaid = sales.where((s) => s.paymentType == 'credit').toList();
 
       // Fournisseurs avec dettes
-      final debtSuppliers = suppliers.where((s) => (s.balance ?? 0) > 0).toList();
+      final debtSuppliers = suppliers
+          .where((s) => (s.balance ?? 0) > 0)
+          .toList();
 
       if (mounted) {
         setState(() {
@@ -54,7 +59,11 @@ class _AlertsWidgetState extends State<AlertsWidget> {
           _lowSalesProducts = lowSales;
           _unpaidSales = unpaid;
           _suppliersWithDebt = debtSuppliers;
-          _alertCount = lowStock.length + lowSales.length + unpaid.length + debtSuppliers.length;
+          _alertCount =
+              lowStock.length +
+              lowSales.length +
+              unpaid.length +
+              debtSuppliers.length;
         });
       }
     } catch (e) {
@@ -65,13 +74,14 @@ class _AlertsWidgetState extends State<AlertsWidget> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return PopupMenuButton<String>(
       icon: Stack(
         children: [
           Icon(
             Icons.notifications_outlined,
-            color: isDark ? Colors.white70 : Colors.black54,
+            color:
+                widget.iconColor ?? (isDark ? Colors.white70 : Colors.black54),
             size: 24,
           ),
           if (_alertCount > 0)
@@ -84,10 +94,7 @@ class _AlertsWidgetState extends State<AlertsWidget> {
                   color: Colors.red,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                constraints: const BoxConstraints(
-                  minWidth: 16,
-                  minHeight: 16,
-                ),
+                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                 child: Text(
                   '$_alertCount',
                   style: const TextStyle(
@@ -124,7 +131,7 @@ class _AlertsWidgetState extends State<AlertsWidget> {
                   ],
                 ),
                 const Divider(),
-                
+
                 // Produits en rupture de stock
                 if (_lowStockProducts.isNotEmpty) ...[
                   Row(
@@ -133,24 +140,34 @@ class _AlertsWidgetState extends State<AlertsWidget> {
                       const SizedBox(width: 8),
                       Text(
                         'Produits en rupture (${_lowStockProducts.length})',
-                        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  ..._lowStockProducts.take(3).map((product) => Padding(
-                    padding: const EdgeInsets.only(left: 24, bottom: 2),
-                    child: Text(
-                      '• ${product.name} (${product.stockQuantity} restants)',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  )),
+                  ..._lowStockProducts
+                      .take(3)
+                      .map(
+                        (product) => Padding(
+                          padding: const EdgeInsets.only(left: 24, bottom: 2),
+                          child: Text(
+                            '• ${product.name} (${product.stockQuantity} restants)',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ),
                   if (_lowStockProducts.length > 3)
                     Padding(
                       padding: const EdgeInsets.only(left: 24),
                       child: Text(
                         '... et ${_lowStockProducts.length - 3} autres',
-                        style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     ),
                   const SizedBox(height: 8),
@@ -164,18 +181,25 @@ class _AlertsWidgetState extends State<AlertsWidget> {
                       const SizedBox(width: 8),
                       Text(
                         'Produits peu vendus (${_lowSalesProducts.length})',
-                        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.orange),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  ..._lowSalesProducts.take(3).map((product) => Padding(
-                    padding: const EdgeInsets.only(left: 24, bottom: 2),
-                    child: Text(
-                      '• ${product.name} (${product.stockQuantity} en stock)',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  )),
+                  ..._lowSalesProducts
+                      .take(3)
+                      .map(
+                        (product) => Padding(
+                          padding: const EdgeInsets.only(left: 24, bottom: 2),
+                          child: Text(
+                            '• ${product.name} (${product.stockQuantity} en stock)',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ),
                   const SizedBox(height: 8),
                 ],
 
@@ -183,11 +207,18 @@ class _AlertsWidgetState extends State<AlertsWidget> {
                 if (_unpaidSales.isNotEmpty) ...[
                   Row(
                     children: [
-                      Icon(Icons.account_balance_wallet, color: Colors.blue, size: 16),
+                      Icon(
+                        Icons.account_balance_wallet,
+                        color: Colors.blue,
+                        size: 16,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Créances clients (${_unpaidSales.length})',
-                        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.blue),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue,
+                        ),
                       ),
                     ],
                   ),
@@ -196,7 +227,10 @@ class _AlertsWidgetState extends State<AlertsWidget> {
                     padding: const EdgeInsets.only(left: 24),
                     child: Text(
                       'Total: ${CurrencyFormatter.formatGNF(_unpaidSales.fold<double>(0.0, (sum, sale) => sum + (sale.totalAmount ?? 0)))}',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -210,18 +244,25 @@ class _AlertsWidgetState extends State<AlertsWidget> {
                       const SizedBox(width: 8),
                       Text(
                         'Dettes fournisseurs (${_suppliersWithDebt.length})',
-                        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.purple),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.purple,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  ..._suppliersWithDebt.take(2).map((supplier) => Padding(
-                    padding: const EdgeInsets.only(left: 24, bottom: 2),
-                    child: Text(
-                      '• ${supplier.name}: ${CurrencyFormatter.formatGNF(supplier.balance)}',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  )),
+                  ..._suppliersWithDebt
+                      .take(2)
+                      .map(
+                        (supplier) => Padding(
+                          padding: const EdgeInsets.only(left: 24, bottom: 2),
+                          child: Text(
+                            '• ${supplier.name}: ${CurrencyFormatter.formatGNF(supplier.balance)}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ),
                   const SizedBox(height: 8),
                 ],
 
@@ -232,7 +273,10 @@ class _AlertsWidgetState extends State<AlertsWidget> {
                       children: [
                         Icon(Icons.check_circle, color: Colors.green, size: 20),
                         SizedBox(width: 8),
-                        Text('Aucune alerte', style: TextStyle(color: Colors.green)),
+                        Text(
+                          'Aucune alerte',
+                          style: TextStyle(color: Colors.green),
+                        ),
                       ],
                     ),
                   ),

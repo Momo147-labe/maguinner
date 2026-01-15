@@ -227,6 +227,12 @@ class _SidebarState extends State<Sidebar> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 4),
                 _buildMenuItem(
+                  icon: Icons.receipt_long_rounded,
+                  title: 'Factures',
+                  route: '/invoices',
+                ),
+                const SizedBox(height: 4),
+                _buildMenuItem(
                   icon: Icons.people_rounded,
                   title: 'Utilisateurs',
                   route: '/users',

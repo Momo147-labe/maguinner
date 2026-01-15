@@ -10,7 +10,8 @@ import '../services/export_service.dart';
 class SuppliersContent extends StatefulWidget {
   final User currentUser;
 
-  const SuppliersContent({Key? key, required this.currentUser}) : super(key: key);
+  const SuppliersContent({Key? key, required this.currentUser})
+    : super(key: key);
 
   @override
   State<SuppliersContent> createState() => _SuppliersContentState();
@@ -22,11 +23,6 @@ class _SuppliersContentState extends State<SuppliersContent> {
   List<Supplier> _filteredSuppliers = [];
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
@@ -36,10 +32,6 @@ class _SuppliersContentState extends State<SuppliersContent> {
   @override
   void dispose() {
     _searchController.dispose();
-    _nameController.dispose();
-    _phoneController.dispose();
-    _emailController.dispose();
-    _addressController.dispose();
     super.dispose();
   }
 
@@ -59,9 +51,9 @@ class _SuppliersContentState extends State<SuppliersContent> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
       }
     }
   }
@@ -70,22 +62,24 @@ class _SuppliersContentState extends State<SuppliersContent> {
     try {
       final purchases = await DatabaseHelper.instance.getPurchases();
       double totalPurchases = 0;
-      
+
       for (final purchase in purchases) {
         if (purchase.supplierId == supplierId) {
           totalPurchases += purchase.totalAmount ?? 0;
         }
       }
-      
+
       return totalPurchases;
     } catch (e) {
       return 0;
     }
   }
 
-  Future<List<List<String>>> _buildSupplierRows(List<Supplier> suppliers) async {
+  Future<List<List<String>>> _buildSupplierRows(
+    List<Supplier> suppliers,
+  ) async {
     final List<List<String>> rows = [];
-    
+
     for (final supplier in suppliers) {
       final totalPurchases = await _calculateSupplierPurchases(supplier.id!);
       rows.add([
@@ -96,7 +90,7 @@ class _SuppliersContentState extends State<SuppliersContent> {
         _formatDate(supplier.createdAt),
       ]);
     }
-    
+
     return rows;
   }
 
@@ -110,13 +104,16 @@ class _SuppliersContentState extends State<SuppliersContent> {
         });
       }
     } else {
-      final filtered = _suppliers.where((supplier) =>
-        supplier.name.toLowerCase().contains(query) ||
-        (supplier.phone?.toLowerCase().contains(query) ?? false) ||
-        (supplier.email?.toLowerCase().contains(query) ?? false) ||
-        (supplier.address?.toLowerCase().contains(query) ?? false)
-      ).toList();
-      
+      final filtered = _suppliers
+          .where(
+            (supplier) =>
+                supplier.name.toLowerCase().contains(query) ||
+                (supplier.phone?.toLowerCase().contains(query) ?? false) ||
+                (supplier.email?.toLowerCase().contains(query) ?? false) ||
+                (supplier.address?.toLowerCase().contains(query) ?? false),
+          )
+          .toList();
+
       if (mounted) {
         setState(() {
           _filteredSuppliers = filtered;
@@ -128,7 +125,7 @@ class _SuppliersContentState extends State<SuppliersContent> {
 
   List<List<String>> _buildFilteredRows(List<Supplier> suppliers) {
     final List<List<String>> rows = [];
-    
+
     for (int i = 0; i < suppliers.length; i++) {
       final supplier = suppliers[i];
       final originalIndex = _suppliers.indexWhere((s) => s.id == supplier.id);
@@ -136,140 +133,49 @@ class _SuppliersContentState extends State<SuppliersContent> {
         rows.add(_tableRows[originalIndex]);
       }
     }
-    
+
     return rows;
   }
 
   void _showSupplierDialog({Supplier? supplier}) {
-    final isEditing = supplier != null;
-    
-    if (isEditing) {
-      _nameController.text = supplier.name;
-      _phoneController.text = supplier.phone ?? '';
-      _emailController.text = supplier.email ?? '';
-      _addressController.text = supplier.address ?? '';
-    } else {
-      _nameController.clear();
-      _phoneController.clear();
-      _emailController.clear();
-      _addressController.clear();
-    }
-
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isEditing ? 'Modifier le Fournisseur' : 'Nouveau Fournisseur'),
-        content: SizedBox(
-          width: 400,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nom du fournisseur *',
-                  border: OutlineInputBorder(),
+      builder: (context) => SupplierDialog(
+        supplier: supplier,
+        onSave: (savedSupplier) async {
+          try {
+            if (supplier != null) {
+              await DatabaseHelper.instance.updateSupplier(savedSupplier);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Fournisseur modifié avec succès'),
+                  backgroundColor: Colors.green,
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Téléphone',
-                  border: OutlineInputBorder(),
+              );
+            } else {
+              await DatabaseHelper.instance.insertSupplier(savedSupplier);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Fournisseur créé avec succès'),
+                  backgroundColor: Colors.green,
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _addressController,
-                decoration: const InputDecoration(
-                  labelText: 'Adresse',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 2,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () => _saveSupplier(supplier),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: Text(isEditing ? 'Modifier' : 'Créer'),
-          ),
-        ],
+              );
+            }
+            if (!mounted) return;
+            Navigator.pop(context);
+            _loadSuppliers();
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+            }
+          }
+        },
       ),
     );
-  }
-
-  Future<void> _saveSupplier(Supplier? existingSupplier) async {
-    if (!mounted) return;
-    
-    if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Le nom du fournisseur est obligatoire')),
-      );
-      return;
-    }
-
-    try {
-      final supplier = Supplier(
-        id: existingSupplier?.id,
-        name: _nameController.text.trim(),
-        phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
-        email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
-        address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
-        createdAt: existingSupplier?.createdAt ?? DateTime.now().toIso8601String(),
-      );
-
-      if (existingSupplier != null) {
-        await DatabaseHelper.instance.updateSupplier(supplier);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Fournisseur modifié avec succès'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } else {
-        await DatabaseHelper.instance.insertSupplier(supplier);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Fournisseur créé avec succès'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      }
-
-      if (mounted) {
-        Navigator.pop(context);
-        _loadSuppliers();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
-      }
-    }
   }
 
   Future<void> _exportSuppliers(String format) async {
@@ -298,9 +204,9 @@ class _SuppliersContentState extends State<SuppliersContent> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors de l\'export: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur lors de l\'export: $e')));
       }
     }
   }
@@ -321,34 +227,41 @@ class _SuppliersContentState extends State<SuppliersContent> {
 
   Future<void> _deleteSupplier(int index) async {
     final supplier = _filteredSuppliers[index];
-    
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Confirmer la suppression'),
-        content: Text('Êtes-vous sûr de vouloir supprimer le fournisseur "${supplier.name}" ?'),
+        content: Text(
+          'Êtes-vous sûr de vouloir supprimer le fournisseur "${supplier.name}" ?',
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Annuler'),
           ),
           ElevatedButton(
             onPressed: () async {
+              final navigator = Navigator.of(dialogContext);
+              final messenger = ScaffoldMessenger.of(context);
+
               try {
-                await DatabaseHelper.instance.deleteSupplier(supplier.id!);
-                Navigator.pop(context);
-                _loadSuppliers();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Fournisseur supprimé avec succès'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                if (supplier.id != null) {
+                  await DatabaseHelper.instance.deleteSupplier(supplier.id!);
+                  navigator.pop();
+                  _loadSuppliers();
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Fournisseur supprimé avec succès'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
               } catch (e) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Erreur: $e')),
-                );
+                if (navigator.canPop()) {
+                  navigator.pop();
+                }
+                messenger.showSnackBar(SnackBar(content: Text('Erreur: $e')));
               }
             },
             style: ElevatedButton.styleFrom(
@@ -381,82 +294,158 @@ class _SuppliersContentState extends State<SuppliersContent> {
     return Column(
       children: [
         // En-tête avec bouton Nouveau Fournisseur
-        Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              ElevatedButton.icon(
-                onPressed: () => _showSupplierDialog(),
-                icon: const Icon(Icons.business_center),
-                label: const Text('Nouveau Fournisseur'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              PopupMenuButton<String>(
-                onSelected: (value) => _exportSuppliers(value),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'pdf',
-                    child: Row(
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 800;
+            if (isNarrow) {
+              return Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
                       children: [
-                        Icon(Icons.picture_as_pdf, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Exporter PDF'),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => _showSupplierDialog(),
+                            icon: const Icon(Icons.business_center),
+                            label: const Text('Nouveau'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        PopupMenuButton<String>(
+                          onSelected: (value) => _exportSuppliers(value),
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'pdf',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.picture_as_pdf, color: Colors.red),
+                                  SizedBox(width: 8),
+                                  Text('PDF'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'excel',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.table_chart, color: Colors.green),
+                                  SizedBox(width: 8),
+                                  Text('Excel'),
+                                ],
+                              ),
+                            ),
+                          ],
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.orange,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Icon(
+                              Icons.download,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _searchController,
+                      decoration: const InputDecoration(
+                        hintText: 'Rechercher un fournisseur...',
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                      ),
+                      onChanged: (value) => _filterSuppliers(),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showSupplierDialog(),
+                      icon: const Icon(Icons.business_center, size: 18),
+                      label: const Text('Nouveau Fournisseur', style: TextStyle(fontSize: 14)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                      ),
+                    ),
                   ),
-                  const PopupMenuItem(
-                    value: 'excel',
-                    child: Row(
-                      children: [
-                        Icon(Icons.table_chart, color: Colors.green),
-                        SizedBox(width: 8),
-                        Text('Exporter Excel'),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: PopupMenuButton<String>(
+                      onSelected: (value) => _exportSuppliers(value),
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'pdf',
+                          child: Row(
+                            children: [
+                              Icon(Icons.picture_as_pdf, color: Colors.red, size: 18),
+                              SizedBox(width: 8),
+                              Text('Exporter PDF', style: TextStyle(fontSize: 14)),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'excel',
+                          child: Row(
+                            children: [
+                              Icon(Icons.table_chart, color: Colors.green, size: 18),
+                              SizedBox(width: 8),
+                              Text('Exporter Excel', style: TextStyle(fontSize: 14)),
+                            ],
+                          ),
+                        ),
                       ],
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.download, color: Colors.white, size: 18),
+                            SizedBox(width: 6),
+                            Text('Exporter', style: TextStyle(color: Colors.white, fontSize: 14)),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.download, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text('Exporter', style: TextStyle(color: Colors.white)),
-                    ],
-                  ),
-                ),
               ),
-              const Spacer(),
-              SizedBox(
-                width: 300,
-                child: TextField(
-                  controller: _searchController,
-                  decoration: const InputDecoration(
-                    hintText: 'Rechercher un fournisseur...',
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                  onChanged: (value) => _filterSuppliers(),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
-        
+
         // Tableau des fournisseurs
         Expanded(
           child: AdvancedDataTable(
@@ -466,24 +455,239 @@ class _SuppliersContentState extends State<SuppliersContent> {
               'Téléphone',
               'Adresse',
               'Total achats (GNF)',
-              'Date création'
+              'Date création',
             ],
             rows: _tableRows,
             onDetails: List.generate(
               _filteredSuppliers.length,
-              (index) => () => _viewSupplierDetails(index),
+              (index) =>
+                  () => _viewSupplierDetails(index),
             ),
             onEdit: List.generate(
               _filteredSuppliers.length,
-              (index) => () => _editSupplier(index),
+              (index) =>
+                  () => _editSupplier(index),
             ),
             onDelete: List.generate(
               _filteredSuppliers.length,
-              (index) => () => _deleteSupplier(index),
+              (index) =>
+                  () => _deleteSupplier(index),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+class SupplierDialog extends StatefulWidget {
+  final Supplier? supplier;
+  final Function(Supplier) onSave;
+
+  const SupplierDialog({Key? key, this.supplier, required this.onSave})
+    : super(key: key);
+
+  @override
+  State<SupplierDialog> createState() => _SupplierDialogState();
+}
+
+class _SupplierDialogState extends State<SupplierDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _addressController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.supplier?.name ?? '');
+    _phoneController = TextEditingController(
+      text: widget.supplier?.phone ?? '',
+    );
+    _emailController = TextEditingController(
+      text: widget.supplier?.email ?? '',
+    );
+    _addressController = TextEditingController(
+      text: widget.supplier?.address ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _addressController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Le nom du fournisseur est obligatoire')),
+      );
+      return;
+    }
+
+    final supplier = Supplier(
+      id: widget.supplier?.id,
+      name: _nameController.text.trim(),
+      phone: _phoneController.text.trim().isEmpty
+          ? null
+          : _phoneController.text.trim(),
+      email: _emailController.text.trim().isEmpty
+          ? null
+          : _emailController.text.trim(),
+      address: _addressController.text.trim().isEmpty
+          ? null
+          : _addressController.text.trim(),
+      createdAt: widget.supplier?.createdAt ?? DateTime.now().toIso8601String(),
+    );
+
+    widget.onSave(supplier);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final isEditing = widget.supplier != null;
+
+    return Dialog(
+      backgroundColor: theme.cardTheme.color,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        width: 450,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    isEditing ? Icons.edit_rounded : Icons.domain_add_rounded,
+                    color: theme.colorScheme.onPrimaryContainer,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    isEditing ? 'Modifier le Fournisseur' : 'Nouveau Fournisseur',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: 'Nom du fournisseur *',
+                prefixIcon: const Icon(Icons.business_rounded),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: isDark
+                    ? theme.colorScheme.surface
+                    : theme.colorScheme.surfaceVariant.withOpacity(0.3),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _phoneController,
+              decoration: InputDecoration(
+                labelText: 'Téléphone',
+                prefixIcon: const Icon(Icons.phone_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: isDark
+                    ? theme.colorScheme.surface
+                    : theme.colorScheme.surfaceVariant.withOpacity(0.3),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _emailController,
+              decoration: InputDecoration(
+                labelText: 'Email',
+                prefixIcon: const Icon(Icons.email_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: isDark
+                    ? theme.colorScheme.surface
+                    : theme.colorScheme.surfaceVariant.withOpacity(0.3),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _addressController,
+              decoration: InputDecoration(
+                labelText: 'Adresse',
+                prefixIcon: const Icon(Icons.location_on_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: isDark
+                    ? theme.colorScheme.surface
+                    : theme.colorScheme.surfaceVariant.withOpacity(0.3),
+              ),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Annuler'),
+                ),
+                const SizedBox(width: 16),
+                FilledButton.icon(
+                  onPressed: _submit,
+                  icon: const Icon(Icons.save_rounded),
+                  label: Text(isEditing ? 'Modifier' : 'Créer'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

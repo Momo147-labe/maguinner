@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../core/database/database_helper.dart';
 import '../models/store_info.dart';
 import '../models/user.dart';
+import '../utils/responsive_helper.dart';
 
 /// 🎆 Flux de premier lancement - 5 pages
 class FirstLaunchScreen extends StatefulWidget {
@@ -135,13 +136,15 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveHelper.isMobile(context);
+    
     return Scaffold(
       body: Column(
         children: [
           // Barre de progression
           Container(
-            height: 80,
-            padding: const EdgeInsets.all(20),
+            height: isMobile ? 70 : 80,
+            padding: EdgeInsets.all(isMobile ? 16 : 20),
             child: Column(
               children: [
                 Row(
@@ -151,17 +154,19 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
                       'Configuration initiale',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
+                        fontSize: isMobile ? 16 : null,
                       ),
                     ),
                     Text(
                       '${_currentPage + 1}/5',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
+                        fontSize: isMobile ? 14 : null,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: isMobile ? 8 : 12),
                 LinearProgressIndicator(
                   value: (_currentPage + 1) / 5,
                   backgroundColor: Colors.grey[300],
@@ -210,7 +215,7 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
           
           // Boutons de navigation
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(isMobile ? 16 : 20),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -243,14 +248,16 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
     required String description,
     required IconData icon,
   }) {
+    final isMobile = ResponsiveHelper.isMobile(context);
+    
     return Padding(
-      padding: const EdgeInsets.all(40),
+      padding: EdgeInsets.all(isMobile ? 24 : 40),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 120,
-            height: 120,
+            width: isMobile ? 80 : 120,
+            height: isMobile ? 80 : 120,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -258,37 +265,40 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
                   Theme.of(context).primaryColor.withOpacity(0.7),
                 ],
               ),
-              borderRadius: BorderRadius.circular(60),
+              borderRadius: BorderRadius.circular(isMobile ? 40 : 60),
             ),
             child: Icon(
               icon,
-              size: 60,
+              size: isMobile ? 40 : 60,
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 40),
+          SizedBox(height: isMobile ? 24 : 40),
           Text(
             title,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
+              fontSize: isMobile ? 24 : null,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isMobile ? 12 : 16),
           Text(
             subtitle,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: Theme.of(context).primaryColor,
               fontWeight: FontWeight.w600,
+              fontSize: isMobile ? 18 : null,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: isMobile ? 16 : 24),
           Text(
             description,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: Colors.grey[600],
               height: 1.5,
+              fontSize: isMobile ? 16 : null,
             ),
             textAlign: TextAlign.center,
           ),
@@ -298,10 +308,12 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
   }
 
   Widget _buildSetupPage() {
+    final isMobile = ResponsiveHelper.isMobile(context);
+    
     return Center(
       child: Container(
-        width: 800,
-        margin: const EdgeInsets.all(40),
+        width: isMobile ? double.infinity : 800,
+        margin: EdgeInsets.all(isMobile ? 16 : 40),
         child: Card(
           elevation: 8,
           shadowColor: Colors.black.withOpacity(0.1),
@@ -309,7 +321,7 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(48),
+            padding: EdgeInsets.all(isMobile ? 24 : 48),
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,8 +331,8 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
                     child: Column(
                       children: [
                         Container(
-                          width: 60,
-                          height: 60,
+                          width: isMobile ? 50 : 60,
+                          height: isMobile ? 50 : 60,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
@@ -328,19 +340,20 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
                                 Theme.of(context).primaryColor.withOpacity(0.8),
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(30),
+                            borderRadius: BorderRadius.circular(isMobile ? 25 : 30),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.store,
-                            size: 30,
+                            size: isMobile ? 25 : 30,
                             color: Colors.white,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: isMobile ? 12 : 16),
                         Text(
                           'Configuration finale',
                           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
+                            fontSize: isMobile ? 20 : null,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -348,252 +361,23 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
                           'Créez votre magasin et votre compte administrateur',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.grey[600],
+                            fontSize: isMobile ? 14 : null,
                           ),
                           textAlign: TextAlign.center,
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: isMobile ? 24 : 40),
                   
-                  // Cards en row
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Section Magasin
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Theme.of(context).primaryColor.withOpacity(0.2),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.store,
-                                    color: Theme.of(context).primaryColor,
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'Informations du magasin',
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: Theme.of(context).primaryColor,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
-                              
-                              TextField(
-                                controller: _storeNameController,
-                                decoration: InputDecoration(
-                                  labelText: 'Nom du magasin *',
-                                  hintText: 'Ex: Boutique Centrale',
-                                  prefixIcon: const Icon(Icons.business),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              
-                              TextField(
-                                controller: _storeOwnerController,
-                                decoration: InputDecoration(
-                                  labelText: 'Propriétaire *',
-                                  hintText: 'Ex: Mamadou Diallo',
-                                  prefixIcon: const Icon(Icons.person_outline),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              
-                              TextField(
-                                controller: _storePhoneController,
-                                decoration: InputDecoration(
-                                  labelText: 'Téléphone *',
-                                  hintText: 'Ex: +224 123 456 789',
-                                  prefixIcon: const Icon(Icons.phone),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              
-                              TextField(
-                                controller: _storeAddressController,
-                                decoration: InputDecoration(
-                                  labelText: 'Adresse / Ville',
-                                  hintText: 'Ex: Conakry, Guinée (optionnel)',
-                                  prefixIcon: const Icon(Icons.location_on),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                              ),
-                              
-                              // Devise fixée
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.green[50],
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.green[200]!),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.monetization_on, color: Colors.green[700], size: 20),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Devise: GNF (Franc guinéen)',
-                                        style: TextStyle(
-                                          color: Colors.green[700],
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      
-                      const SizedBox(width: 24),
-                      
-                      // Section Utilisateur
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.orange.withOpacity(0.2),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.admin_panel_settings,
-                                    color: Colors.orange[700],
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'Premier administrateur',
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.orange[700],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
-                              
-                              TextField(
-                                controller: _userNameController,
-                                decoration: InputDecoration(
-                                  labelText: 'Nom complet *',
-                                  hintText: 'Ex: Mamadou Diallo',
-                                  prefixIcon: const Icon(Icons.person),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              
-                              TextField(
-                                controller: _usernameController,
-                                decoration: InputDecoration(
-                                  labelText: 'Nom d\'utilisateur *',
-                                  hintText: 'Ex: admin',
-                                  prefixIcon: const Icon(Icons.account_circle),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              
-                              TextField(
-                                controller: _passwordController,
-                                decoration: InputDecoration(
-                                  labelText: 'Mot de passe *',
-                                  hintText: 'Minimum 6 caractères',
-                                  prefixIcon: const Icon(Icons.lock),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                                obscureText: true,
-                              ),
-                              const SizedBox(height: 16),
-                              
-                              TextField(
-                                controller: _secretCodeController,
-                                decoration: InputDecoration(
-                                  labelText: 'Code secret *',
-                                  hintText: 'Pour récupération',
-                                  prefixIcon: const Icon(Icons.security),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                                obscureText: true,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  // Cards en row ou column selon l'écran
+                  isMobile ? _buildMobileSetupForm() : _buildDesktopSetupForm(),
                   
                   // Message d'erreur
                   if (_setupError != null) ...[
-                    const SizedBox(height: 24),
+                    SizedBox(height: isMobile ? 16 : 24),
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(isMobile ? 12 : 16),
                       decoration: BoxDecoration(
                         color: Colors.red[50],
                         borderRadius: BorderRadius.circular(8),
@@ -601,14 +385,15 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.error_outline, color: Colors.red[700], size: 24),
-                          const SizedBox(width: 12),
+                          Icon(Icons.error_outline, color: Colors.red[700], size: isMobile ? 20 : 24),
+                          SizedBox(width: isMobile ? 8 : 12),
                           Expanded(
                             child: Text(
                               _setupError!,
                               style: TextStyle(
                                 color: Colors.red[700],
                                 fontWeight: FontWeight.w500,
+                                fontSize: isMobile ? 12 : null,
                               ),
                             ),
                           ),
@@ -617,12 +402,12 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
                     ),
                   ],
                   
-                  const SizedBox(height: 40),
+                  SizedBox(height: isMobile ? 24 : 40),
                   
                   // Bouton final
                   SizedBox(
                     width: double.infinity,
-                    height: 52,
+                    height: isMobile ? 48 : 52,
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _completeSetup,
                       style: ElevatedButton.styleFrom(
@@ -637,28 +422,28 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
                           ? Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
+                                SizedBox(
+                                  height: isMobile ? 18 : 20,
+                                  width: isMobile ? 18 : 20,
+                                  child: const CircularProgressIndicator(
                                     strokeWidth: 2,
                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                const Text(
+                                SizedBox(width: isMobile ? 8 : 12),
+                                Text(
                                   'Configuration en cours...',
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: isMobile ? 14 : 16,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
                             )
-                          : const Text(
+                          : Text(
                               'FINALISER LA CONFIGURATION',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: isMobile ? 14 : 16,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.5,
                               ),
@@ -670,6 +455,252 @@ class _FirstLaunchScreenState extends State<FirstLaunchScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopSetupForm() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Magasin
+        Expanded(child: _buildStoreSection()),
+        const SizedBox(width: 24),
+        // Section Utilisateur
+        Expanded(child: _buildUserSection()),
+      ],
+    );
+  }
+
+  Widget _buildMobileSetupForm() {
+    return Column(
+      children: [
+        _buildStoreSection(),
+        const SizedBox(height: 24),
+        _buildUserSection(),
+      ],
+    );
+  }
+
+  Widget _buildStoreSection() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).primaryColor.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.store,
+                color: Theme.of(context).primaryColor,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Informations du magasin',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          TextField(
+            controller: _storeNameController,
+            decoration: InputDecoration(
+              labelText: 'Nom du magasin *',
+              hintText: 'Ex: Boutique Centrale',
+              prefixIcon: const Icon(Icons.business),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          TextField(
+            controller: _storeOwnerController,
+            decoration: InputDecoration(
+              labelText: 'Propriétaire *',
+              hintText: 'Ex: Mamadou Diallo',
+              prefixIcon: const Icon(Icons.person_outline),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          TextField(
+            controller: _storePhoneController,
+            decoration: InputDecoration(
+              labelText: 'Téléphone *',
+              hintText: 'Ex: +224 123 456 789',
+              prefixIcon: const Icon(Icons.phone),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          TextField(
+            controller: _storeAddressController,
+            decoration: InputDecoration(
+              labelText: 'Adresse / Ville',
+              hintText: 'Ex: Conakry, Guinée (optionnel)',
+              prefixIcon: const Icon(Icons.location_on),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+          ),
+          
+          // Devise fixée
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.monetization_on, color: Colors.green[700], size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Devise: GNF (Franc guinéen)',
+                    style: TextStyle(
+                      color: Colors.green[700],
+                      fontWeight: FontWeight.w500,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserSection() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.orange.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.admin_panel_settings,
+                color: Colors.orange[700],
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Premier administrateur',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.orange[700],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          TextField(
+            controller: _userNameController,
+            decoration: InputDecoration(
+              labelText: 'Nom complet *',
+              hintText: 'Ex: Mamadou Diallo',
+              prefixIcon: const Icon(Icons.person),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          TextField(
+            controller: _usernameController,
+            decoration: InputDecoration(
+              labelText: 'Nom d\'utilisateur *',
+              hintText: 'Ex: admin',
+              prefixIcon: const Icon(Icons.account_circle),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          TextField(
+            controller: _passwordController,
+            decoration: InputDecoration(
+              labelText: 'Mot de passe *',
+              hintText: 'Minimum 6 caractères',
+              prefixIcon: const Icon(Icons.lock),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+            obscureText: true,
+          ),
+          const SizedBox(height: 16),
+          
+          TextField(
+            controller: _secretCodeController,
+            decoration: InputDecoration(
+              labelText: 'Code secret *',
+              hintText: 'Pour récupération',
+              prefixIcon: const Icon(Icons.security),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+            obscureText: true,
+          ),
+        ],
       ),
     );
   }

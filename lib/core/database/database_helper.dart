@@ -514,7 +514,6 @@ class DatabaseHelper {
   }
 
   // ================= LICENSE METHODS =================
-  /// Sauvegarde une licence en SQLite (OBLIGATOIRE)
   Future<void> saveLicense(String license) async {
     final db = await database;
     final existing = await getAppSettings();
@@ -541,14 +540,12 @@ class DatabaseHelper {
     }
   }
 
-  /// Récupère la licence stockée
   Future<String?> getLicense() async {
     final db = await database;
     final res = await db.query('app_settings', limit: 1);
     return res.isNotEmpty ? res.first['license'] as String? : null;
   }
 
-  /// Supprime la licence (désactivation)
   Future<void> clearLicense() async {
     final db = await database;
     final existing = await getAppSettings();
@@ -613,6 +610,19 @@ class DatabaseHelper {
       storeMap['created_at'] ?? DateTime.now().toIso8601String(),
       storeMap['updated_at'],
     ]);
+  }
+
+  // ================= INVOICE QUERIES =================
+  Future<List<Sale>> getSalesByCustomer(int customerId) async {
+    final db = await database;
+    final maps = await db.query('sales', where: 'customer_id = ?', whereArgs: [customerId]);
+    return maps.map((map) => Sale.fromMap(map)).toList();
+  }
+
+  Future<List<Purchase>> getPurchasesBySupplier(int supplierId) async {
+    final db = await database;
+    final maps = await db.query('purchases', where: 'supplier_id = ?', whereArgs: [supplierId]);
+    return maps.map((map) => Purchase.fromMap(map)).toList();
   }
 
   Future<void> close() async {

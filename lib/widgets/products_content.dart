@@ -10,10 +10,8 @@ import '../utils/currency_formatter.dart';
 class ProductsContent extends StatefulWidget {
   final User currentUser;
 
-  const ProductsContent({
-    Key? key,
-    required this.currentUser,
-  }) : super(key: key);
+  const ProductsContent({Key? key, required this.currentUser})
+    : super(key: key);
 
   @override
   State<ProductsContent> createState() => _ProductsContentState();
@@ -33,16 +31,17 @@ class _ProductsContentState extends State<ProductsContent> {
     setState(() => _isLoading = true);
     try {
       final products = await DatabaseHelper.instance.getProducts();
+      if (!mounted) return;
       setState(() {
         _products = products;
         _isLoading = false;
       });
     } catch (e) {
-      setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
       }
     }
   }
@@ -56,15 +55,16 @@ class _ProductsContentState extends State<ProductsContent> {
           try {
             if (product == null) {
               await DatabaseHelper.instance.insertProduct(savedProduct);
-            } else {
-              await DatabaseHelper.instance.updateProduct(savedProduct);
-            }
+            } else {}
+            if (!mounted) return;
             _loadProducts();
             Navigator.of(context).pop();
           } catch (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Erreur: $e')),
-            );
+            if (mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+            }
           }
         },
       ),
@@ -74,11 +74,14 @@ class _ProductsContentState extends State<ProductsContent> {
   Future<void> _deleteProduct(int index) async {
     try {
       await DatabaseHelper.instance.deleteProduct(_products[index].id!);
+      if (!mounted) return;
       _loadProducts();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+      }
     }
   }
 
@@ -104,25 +107,31 @@ class _ProductsContentState extends State<ProductsContent> {
               'Seuil d\'alerte',
               'Statut',
             ],
-            rows: _products.map((product) => [
-              product.id.toString(),
-              product.name,
-              product.barcode ?? '',
-              product.category ?? '',
-              CurrencyFormatter.formatGNF(product.purchasePrice),
-              CurrencyFormatter.formatGNF(product.salePrice),
-              product.stockQuantity?.toString() ?? '0',
-              product.stockAlertThreshold?.toString() ?? '0',
-              product.isLowStock ? 'ALERTE' : 'OK',
-            ]).toList(),
+            rows: _products
+                .map(
+                  (product) => [
+                    product.id.toString(),
+                    product.name,
+                    product.barcode ?? '',
+                    product.category ?? '',
+                    CurrencyFormatter.formatGNF(product.purchasePrice),
+                    CurrencyFormatter.formatGNF(product.salePrice),
+                    product.stockQuantity?.toString() ?? '0',
+                    product.stockAlertThreshold?.toString() ?? '0',
+                    product.isLowStock ? 'ALERTE' : 'OK',
+                  ],
+                )
+                .toList(),
             onAdd: () => _showProductDialog(),
             onEdit: List.generate(
               _products.length,
-              (index) => () => _showProductDialog(_products[index]),
+              (index) =>
+                  () => _showProductDialog(_products[index]),
             ),
             onDelete: List.generate(
               _products.length,
-              (index) => () => _deleteProduct(index),
+              (index) =>
+                  () => _deleteProduct(index),
             ),
           ),
         ),
@@ -136,11 +145,8 @@ class ProductDialog extends StatefulWidget {
   final Product? product;
   final Function(Product) onSave;
 
-  const ProductDialog({
-    Key? key,
-    this.product,
-    required this.onSave,
-  }) : super(key: key);
+  const ProductDialog({Key? key, this.product, required this.onSave})
+    : super(key: key);
 
   @override
   State<ProductDialog> createState() => _ProductDialogState();
@@ -160,8 +166,12 @@ class _ProductDialogState extends State<ProductDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.product?.name ?? '');
-    _barcodeController = TextEditingController(text: widget.product?.barcode ?? '');
-    _categoryController = TextEditingController(text: widget.product?.category ?? '');
+    _barcodeController = TextEditingController(
+      text: widget.product?.barcode ?? '',
+    );
+    _categoryController = TextEditingController(
+      text: widget.product?.category ?? '',
+    );
     _purchasePriceController = TextEditingController(
       text: widget.product?.purchasePrice?.toString() ?? '',
     );
@@ -193,8 +203,12 @@ class _ProductDialogState extends State<ProductDialog> {
       final product = Product(
         id: widget.product?.id,
         name: _nameController.text,
-        barcode: _barcodeController.text.isEmpty ? null : _barcodeController.text,
-        category: _categoryController.text.isEmpty ? null : _categoryController.text,
+        barcode: _barcodeController.text.isEmpty
+            ? null
+            : _barcodeController.text,
+        category: _categoryController.text.isEmpty
+            ? null
+            : _categoryController.text,
         purchasePrice: double.tryParse(_purchasePriceController.text),
         salePrice: double.tryParse(_salePriceController.text),
         stockQuantity: int.tryParse(_stockController.text),
@@ -206,30 +220,94 @@ class _ProductDialogState extends State<ProductDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.product == null ? 'Ajouter un produit' : 'Modifier le produit'),
-      content: SizedBox(
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Dialog(
+      backgroundColor: theme.cardTheme.color,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
         width: 500,
+        padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        widget.product == null
+                            ? Icons.add_box_rounded
+                            : Icons.edit_rounded,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      widget.product == null
+                          ? 'Ajouter un produit'
+                          : 'Modifier le produit',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
                 TextFormField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Nom *'),
-                  validator: (value) => value?.isEmpty == true ? 'Nom requis' : null,
+                  decoration: InputDecoration(
+                    labelText: 'Nom du produit *',
+                    prefixIcon: const Icon(Icons.inventory_2_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? theme.colorScheme.surface
+                        : theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                  ),
+                  validator: (value) =>
+                      value?.isEmpty == true ? 'Nom requis' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _barcodeController,
-                  decoration: const InputDecoration(labelText: 'Code-barres'),
+                  decoration: InputDecoration(
+                    labelText: 'Code-barres',
+                    prefixIcon: const Icon(Icons.qr_code),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? theme.colorScheme.surface
+                        : theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _categoryController,
-                  decoration: const InputDecoration(labelText: 'Catégorie'),
+                  decoration: InputDecoration(
+                    labelText: 'Catégorie',
+                    prefixIcon: const Icon(Icons.category_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? theme.colorScheme.surface
+                        : theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -237,7 +315,19 @@ class _ProductDialogState extends State<ProductDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _purchasePriceController,
-                        decoration: const InputDecoration(labelText: 'Prix d\'achat'),
+                        decoration: InputDecoration(
+                          labelText: 'Prix d\'achat',
+                          prefixIcon: const Icon(Icons.attach_money),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: isDark
+                              ? theme.colorScheme.surface
+                              : theme.colorScheme.surfaceVariant.withOpacity(
+                                  0.3,
+                                ),
+                        ),
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -245,7 +335,19 @@ class _ProductDialogState extends State<ProductDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _salePriceController,
-                        decoration: const InputDecoration(labelText: 'Prix de vente'),
+                        decoration: InputDecoration(
+                          labelText: 'Prix de vente',
+                          prefixIcon: const Icon(Icons.sell_outlined),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: isDark
+                              ? theme.colorScheme.surface
+                              : theme.colorScheme.surfaceVariant.withOpacity(
+                                  0.3,
+                                ),
+                        ),
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -257,7 +359,19 @@ class _ProductDialogState extends State<ProductDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _stockController,
-                        decoration: const InputDecoration(labelText: 'Stock'),
+                        decoration: InputDecoration(
+                          labelText: 'Stock',
+                          prefixIcon: const Icon(Icons.warehouse_outlined),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: isDark
+                              ? theme.colorScheme.surface
+                              : theme.colorScheme.surfaceVariant.withOpacity(
+                                  0.3,
+                                ),
+                        ),
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -265,8 +379,54 @@ class _ProductDialogState extends State<ProductDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _alertController,
-                        decoration: const InputDecoration(labelText: 'Seuil d\'alerte'),
+                        decoration: InputDecoration(
+                          labelText: 'Seuil d\'alerte',
+                          prefixIcon: const Icon(Icons.warning_amber_rounded),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: isDark
+                              ? theme.colorScheme.surface
+                              : theme.colorScheme.surfaceVariant.withOpacity(
+                                  0.3,
+                                ),
+                        ),
                         keyboardType: TextInputType.number,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Annuler'),
+                    ),
+                    const SizedBox(width: 16),
+                    FilledButton.icon(
+                      onPressed: _save,
+                      icon: const Icon(Icons.save_rounded),
+                      label: const Text('Enregistrer'),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ],
@@ -276,16 +436,6 @@ class _ProductDialogState extends State<ProductDialog> {
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Annuler'),
-        ),
-        ElevatedButton(
-          onPressed: _save,
-          child: const Text('Enregistrer'),
-        ),
-      ],
     );
   }
 }
